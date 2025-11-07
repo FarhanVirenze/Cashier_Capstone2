@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Styling khusus untuk elemen dengan ID preview */
+#preview {
+    transform: scaleX(1);
+    -webkit-transform: scaleX(1);
+}
+
