@@ -2,94 +2,141 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\CartItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ScanController extends Controller
 {
-    // Hanya untuk mencari produk berdasarkan barcode
+    /* =========================
+       🔎 CEK PRODUK BY BARCODE
+    ========================= */
     public function index(Request $request)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'User belum login.'
+                'message' => 'User belum login',
             ], 401);
         }
 
-        $barcode = $request->input('barcode');
+        $request->validate([
+            'barcode' => 'required|string',
+        ]);
 
-        if (!$barcode) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Barcode tidak tersedia.'
-            ], 422);
-        }
+        $barcode = $request->barcode;
 
         $product = Product::where('barcode', $barcode)
             ->orWhere('barcode', ltrim($barcode, '0'))
             ->first();
 
-        if (!$product) {
+        if (! $product) {
             return response()->json([
                 'success' => false,
-                'message' => 'Produk tidak ditemukan.'
+                'message' => 'Produk tidak ditemukan',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk ditemukan.',
-            'product' => $product
+            'product' => $product,
         ]);
     }
 
-    // Tambahkan produk ke CartItem
+    /* =========================
+       ➕ ADD / INCREMENT CART
+    ========================= */
     public function add(Request $request)
-{
-    if (!Auth::check()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'User belum login.'
-        ], 401);
-    }
+    {
+        if (! Auth::check()) {
+            return response()->json(['success' => false], 401);
+        }
 
-    $productId = $request->input('product_id');
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+        ]);
 
-    if (!$productId) {
-        return response()->json([
-            'success' => false,
-            'message' => 'ID produk tidak tersedia.'
-        ], 422);
-    }
-
-    try {
-        $existing = CartItem::where('user_id', Auth::id())
-            ->where('product_id', $productId)
+        $item = CartItem::where('user_id', Auth::id())
+            ->where('product_id', $request->product_id)
             ->first();
 
-        if ($existing) {
-            $existing->increment('quantity');
+        if ($item) {
+            $item->increment('quantity');
         } else {
             CartItem::create([
                 'user_id' => Auth::id(),
-                'product_id' => $productId,
-                'quantity' => 1
+                'product_id' => $request->product_id,
+                'quantity' => 1,
             ]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /* =========================
+       🛒 GET CART
+    ========================= */
+    public function cart()
+    {
+        if (! Auth::check()) {
+            return response()->json(['items' => [], 'total' => 0]);
+        }
+
+        $items = CartItem::with('product')
+            ->where('user_id', Auth::id())
+            ->get();
+
+        $total = $items->sum(fn ($item) => $item->quantity * $item->product->harga
+        );
+
+        return response()->json([
+            'items' => $items,
+            'total' => $total,
+        ]);
+    }
+
+    /* =========================
+       ➕➖ UPDATE QTY
+    ========================= */
+    public function update(Request $request)
+    {
+        if (! Auth::check()) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:0',
+        ]);
+
+        $item = CartItem::where('user_id', Auth::id())
+            ->where('product_id', $request->product_id)
+            ->first();
+
+        if (! $item) {
+            return response()->json(['success' => false], 404);
+        }
+
+        // Kalau qty 0 → hapus
+        if ($request->quantity < 1) {
+            $item->delete();
+        } else {
+            $item->update(['quantity' => $request->quantity]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function checkStock(Product $product)
+    {
+        if (! $product) {
+            return response()->json(['success' => false]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil ditambahkan ke keranjang.'
+            'stok' => $product->stok,
         ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal ke halaman pos.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 }

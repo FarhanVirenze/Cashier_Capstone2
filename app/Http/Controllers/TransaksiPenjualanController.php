@@ -5,58 +5,74 @@ namespace App\Http\Controllers;
 use App\Models\TransaksiPenjualan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TransaksiPenjualanController extends Controller
 {
-    // 📊 Tampilkan semua transaksi dengan filter tanggal + pencarian
     public function index(Request $request)
     {
-        $query = TransaksiPenjualan::query();
+        $query = TransaksiPenjualan::with('details', 'customer', 'user'); // eager load relasi
 
         $start = $request->input('start_date');
         $end = $request->input('end_date');
         $search = $request->input('search');
 
-        // === Filter Berdasarkan Tanggal ===
+        // === FILTER TANGGAL ===
         if ($start && $end) {
-            $query->whereBetween('tanggal', [$start, $end]);
+            $query->whereBetween(DB::raw('DATE(created_at)'), [$start, $end]);
         } elseif ($start) {
-            $query->where('tanggal', '>=', $start);
+            $query->whereDate('created_at', '>=', $start);
         } elseif ($end) {
-            $query->where('tanggal', '<=', $end);
+            $query->whereDate('created_at', '<=', $end);
         }
 
-        // === Fitur Search ===
+        // === SEARCH ===
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('no_invoice', 'like', "%{$search}%")
-                    ->orWhere('nama_pelanggan', 'like', "%{$search}%")
-                    ->orWhere('nomor_pelanggan', 'like', "%{$search}%")
-                    ->orWhere('nama_user', 'like', "%{$search}%")
                     ->orWhere('metode_pembayaran', 'like', "%{$search}%")
                     ->orWhere('total', 'like', "%{$search}%")
                     ->orWhere('profit', 'like', "%{$search}%")
-                    ->orWhere('tanggal', 'like', "%{$search}%");
+                    ->orWhereDate('created_at', $search)
+                    ->orWhereHas('customer', function ($q2) use ($search) {
+                        $q2->where('nama', 'like', "%{$search}%")
+                            ->orWhere('no_telepon', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('user', function ($q3) use ($search) {
+                        $q3->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
-        $transaksi = $query->latest()->paginate(6)->withQueryString();
+        $transaksi = $query->latest('created_at')
+            ->paginate(6)
+            ->withQueryString();
 
-        // === Notifikasi ===
+        // === HITUNG SUBTOTAL DINAMIS ===
+        $transaksi->each(function ($trx) {
+            $trx->subtotal = $trx->details->reduce(function ($carry, $item) {
+                return $carry + ($item->harga * $item->jumlah);
+            }, 0);
+        });
+
+        // === NOTIFIKASI ===
         if ($transaksi->count() === 0 && ($start || $end || $search)) {
             return redirect()->route('transaksi.index')
                 ->with('error', 'Tidak ada data transaksi sesuai filter yang dipilih.');
         }
 
         if ($transaksi->count() > 0 && ($start || $end || $search)) {
-            session()->flash('success', 'Menampilkan '.$transaksi->count().' transaksi hasil pencarian/filter.');
+            session()->flash(
+                'success',
+                'Menampilkan '.$transaksi->count().' transaksi hasil pencarian/filter.'
+            );
         }
 
         return view('transaksi.index', compact('transaksi', 'start', 'end', 'search'));
     }
 
-    // 🧾 Hapus transaksi dan detailnya
+    // 🧾 Hapus transaksi
     public function destroy($id)
     {
         $user = auth()->user();
@@ -69,120 +85,130 @@ class TransaksiPenjualanController extends Controller
         $transaksi->detailPenjualan()->delete();
         $transaksi->delete();
 
-        return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus.');
+        return redirect()
+            ->route('transaksi.index')
+            ->with('success', 'Transaksi berhasil dihapus.');
     }
 
-    // 🧾 Cetak / preview struk
+    // 🧾 PRINT PREVIEW
     public function print(Request $request)
     {
         $start = $request->input('start_date');
         $end = $request->input('end_date');
 
-        // Ambil semua data tanpa pagination
-        $query = \App\Models\TransaksiPenjualan::query();
+        $query = TransaksiPenjualan::query();
 
         if ($start && $end) {
-            $query->whereBetween('tanggal', [$start, $end]);
+            $query->whereBetween(
+                DB::raw('DATE(created_at)'),
+                [$start, $end]
+            );
         }
 
-        $transaksi = $query->orderBy('tanggal', 'asc')->get();
+        $transaksi = $query
+            ->orderBy('created_at', 'asc')
+            ->get();
 
         return view('transaksi.print', compact('transaksi', 'start', 'end'));
     }
 
-public function cetakTransaksi($id)
-{
-    try {
-        $transaksi = \App\Models\TransaksiPenjualan::with('details.product')
+    // 🧾 CETAK STRUK
+    public function cetakTransaksi($id)
+    {
+        $transaksi = TransaksiPenjualan::with(['details.product', 'customer', 'user'])
             ->findOrFail($id);
 
-        return view('transaksi.cetak_struk', compact('transaksi'));
-    } catch (\Exception $e) {
-        dd($e->getMessage());
+        // Hitung subtotal
+        $transaksi->subtotal = $transaksi->details->sum(fn ($item) => $item->harga * $item->jumlah);
+
+        // Kirim ke JS (struk)
+        $trx = $transaksi->toArray(); // <-- ini penting supaya relasi & subtotal ikut
+
+        return view('transaksi.cetak_struk', compact('trx'));
     }
-}
 
-public function getTransaksiData($id)
-{
-    $transaksi = \App\Models\TransaksiPenjualan::with('details.product')->findOrFail($id);
-    return response()->json($transaksi);
-}
+    public function getTransaksiData($id)
+    {
+        // Ambil transaksi beserta relasi lengkap
+        $transaksi = TransaksiPenjualan::with(['details.product', 'customer', 'user'])
+            ->findOrFail($id);
 
-    // 📄 Export PDF berdasarkan filter tanggal
+        // Hitung subtotal berdasarkan detail
+        $transaksi->subtotal = $transaksi->details->sum(fn ($item) => $item->harga * $item->jumlah);
+
+        // Kirim JSON lengkap ke JS
+        return response()->json($transaksi);
+    }
+    
+    // 📄 EXPORT PDF
     public function exportPdf(Request $request)
     {
-        try {
-            $start = $request->input('start_date');
-            $end = $request->input('end_date');
+        $start = $request->input('start_date');
+        $end = $request->input('end_date');
 
-            if (! $start || ! $end) {
-                if ($request->ajax()) {
-                    return response()->json(['error' => 'Tanggal belum dipilih.'], 400);
-                }
-
-                return redirect()->route('transaksi.index')
-                    ->with('error', 'Silakan pilih rentang tanggal sebelum mencetak PDF.');
-            }
-
-            $transaksi = TransaksiPenjualan::whereBetween('tanggal', [$start, $end])
-                ->orderBy('tanggal', 'desc')
-                ->get();
-
-            if ($transaksi->isEmpty()) {
-                if ($request->ajax()) {
-                    return response()->json(['error' => 'Tidak ada data pada rentang tanggal tersebut.'], 404);
-                }
-
-                return redirect()->route('transaksi.index')
-                    ->with('error', 'Tidak ada data transaksi pada rentang tanggal tersebut.');
-            }
-
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('transaksi.pdf', compact('transaksi', 'start', 'end'))
-                ->setPaper('a4', 'landscape');
-
-            return response($pdf->output(), 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="laporan-penjualan-'.$start.'-sd-'.$end.'.pdf"',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Gagal generate PDF: '.$e->getMessage());
-
-            return response()->json(['error' => 'Gagal membuat PDF: '.$e->getMessage()], 500);
+        if (! $start || ! $end) {
+            return redirect()->route('transaksi.index')
+                ->with('error', 'Silakan pilih rentang tanggal sebelum mencetak PDF.');
         }
+
+        // Ambil transaksi beserta relasinya (details, customer, user)
+        $transaksi = TransaksiPenjualan::with('details', 'customer', 'user')
+            ->whereBetween(DB::raw('DATE(created_at)'), [$start, $end])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($transaksi->isEmpty()) {
+            return redirect()->route('transaksi.index')
+                ->with('error', 'Tidak ada data transaksi pada rentang tanggal tersebut.');
+        }
+
+        // Hitung subtotal untuk masing-masing transaksi
+        foreach ($transaksi as $trx) {
+            $trx->subtotal = $trx->details->reduce(function ($carry, $item) {
+                return $carry + ($item->harga * $item->jumlah);
+            }, 0);
+        }
+
+        $pdf = Pdf::loadView('transaksi.pdf', compact('transaksi', 'start', 'end'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download("laporan-penjualan-{$start}-sd-{$end}.pdf");
     }
 
-    // 📦 EXPORT EXCEL (langsung download seperti PDF)
+    // 📦 EXPORT EXCEL
     public function exportExcel(Request $request)
     {
-        try {
-            $start = $request->input('start_date');
-            $end = $request->input('end_date');
+        $start = $request->input('start_date');
+        $end = $request->input('end_date');
 
-            // Validasi tanggal
-            if (! $start || ! $end) {
-                return redirect()->route('transaksi.index')
-                    ->with('error', 'Silakan pilih rentang tanggal sebelum mengekspor Excel.');
-            }
-
-            $transaksi = \App\Models\TransaksiPenjualan::whereBetween('tanggal', [$start, $end])
-                ->orderBy('tanggal', 'desc')
-                ->get();
-
-            // Jika data kosong
-            if ($transaksi->isEmpty()) {
-                return redirect()->route('transaksi.index')
-                    ->with('error', 'Tidak ada data transaksi pada rentang tanggal tersebut.');
-            }
-
-            // 💾 Gunakan class export & langsung kirim sebagai response download
-            $fileName = "laporan-penjualan-{$start}-sd-{$end}.xlsx";
-
-            return Excel::download(new \App\Exports\TransaksiPenjualanExport($transaksi), $fileName);
-        } catch (\Exception $e) {
-            \Log::error('Gagal export Excel: '.$e->getMessage());
-
+        if (! $start || ! $end) {
             return redirect()->route('transaksi.index')
-                ->with('error', 'Gagal membuat file Excel: '.$e->getMessage());
+                ->with('error', 'Silakan pilih rentang tanggal sebelum mengekspor Excel.');
         }
+
+        // Ambil transaksi beserta relasinya (details, customer, user)
+        $transaksi = TransaksiPenjualan::with('details', 'customer', 'user')
+            ->whereBetween(DB::raw('DATE(created_at)'), [$start, $end])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($transaksi->isEmpty()) {
+            return redirect()->route('transaksi.index')
+                ->with('error', 'Tidak ada data transaksi pada rentang tanggal tersebut.');
+        }
+
+        // Hitung subtotal untuk masing-masing transaksi
+        foreach ($transaksi as $trx) {
+            $trx->subtotal = $trx->details->reduce(function ($carry, $item) {
+                return $carry + ($item->harga * $item->jumlah);
+            }, 0);
+        }
+
+        $fileName = "laporan-penjualan-{$start}-sd-{$end}.xlsx";
+
+        return Excel::download(
+            new \App\Exports\TransaksiPenjualanExport($transaksi),
+            $fileName
+        );
     }
 }

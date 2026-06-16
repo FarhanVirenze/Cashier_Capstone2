@@ -1,9 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
+    <div class="flex items-center justify-between">
         <h2 class="font-semibold text-xl text-gray-200 dark:text-gray-200 leading-tight">
             {{ __('Kelola Akun Kasir') }}
         </h2>
-    </x-slot>
+
+        {{-- ➕ Tambah Kasir (Mobile Only) --}}
+        <a href="{{ route('admin.register') }}"
+            class="md:hidden inline-flex items-center gap-2 px-3 py-2
+                   bg-gradient-to-r from-blue-500 to-blue-600
+                   text-white text-sm font-semibold rounded-lg
+                   shadow-md hover:scale-105 transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 4v16m8-8H4" />
+            </svg>
+            Tambah
+        </a>
+    </div>
+</x-slot>
 
     <div class="py-6 text-gray-900 dark:text-gray-100">
         <div class="max-w-[97%] mx-auto px-4 sm:px-6 lg:px-6">

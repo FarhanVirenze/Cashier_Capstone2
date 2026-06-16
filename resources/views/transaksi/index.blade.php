@@ -24,38 +24,68 @@
                         {{ session('error') }}
                     </p>
                 @endif
-
                 {{-- Filter Laporan Penjualan --}}
                 <div class="bg-blue-50 border border-blue-100 shadow-md rounded-lg p-6 mb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Filter Laporan Penjualan</h3>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
+                        Filter Laporan Penjualan
+                    </h3>
 
                     <form action="{{ route('transaksi.index') }}" method="GET"
                         class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
 
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <div class="flex flex-col">
-                                <label for="start_date" class="text-sm text-gray-600 mb-1">Dari Tanggal</label>
-                                <input type="date" name="start_date" id="start_date"
-                                    value="{{ request('start_date') }}"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-full sm:w-48">
-                            </div>
 
-                            <div class="flex flex-col">
-                                <label for="end_date" class="text-sm text-gray-600 mb-1">Sampai Tanggal</label>
-                                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}"
-                                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-full sm:w-48">
-                            </div>
+                          {{-- Dari Tanggal --}}
+<div class="flex flex-col w-full sm:w-auto">
+    <label for="start_date" class="text-sm text-gray-600 mb-1">
+        Dari Tanggal
+    </label>
+
+    <input type="date" name="start_date" id="start_date"
+        value="{{ request('start_date') }}"
+        class="border border-gray-300 rounded-lg
+               pr-3 py-2
+               focus:outline-none focus:ring-2
+               focus:ring-blue-400 focus:border-blue-400
+               transition w-full sm:w-48">
+</div>
+
+{{-- Sampai Tanggal --}}
+<div class="flex flex-col w-full sm:w-auto">
+    <label for="end_date" class="text-sm text-gray-600 mb-1">
+        Sampai Tanggal
+    </label>
+
+    <input type="date" name="end_date" id="end_date"
+        value="{{ request('end_date') }}"
+        class="border border-gray-300 rounded-lg
+               pr-3 py-2
+               focus:outline-none focus:ring-2
+               focus:ring-blue-400 focus:border-blue-400
+               transition w-full sm:w-48">
+</div>
+
                         </div>
 
+                        {{-- Tombol --}}
                         <div class="flex gap-2 mt-4 sm:mt-0">
+
+                            {{-- Tampilkan --}}
                             <button type="submit"
                                 class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2">
-                                <i class="fa fa-filter"></i> Tampilkan
+                                <i class="fa fa-filter"></i>
+                                Tampilkan
                             </button>
-                            <a href="{{ route('transaksi.index') }}"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2">
-                                <i class="fa fa-undo"></i> Reset
-                            </a>
+
+                            {{-- Reset (MUNCUL HANYA JIKA ADA FILTER) --}}
+                            @if (request()->filled('start_date') || request()->filled('end_date'))
+                                <a href="{{ route('transaksi.index') }}"
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2">
+                                    <i class="fa fa-undo"></i>
+                                    Reset
+                                </a>
+                            @endif
+
                         </div>
                     </form>
                 </div>
@@ -178,12 +208,11 @@
                                     /* 🎯 CSS khusus untuk mode print */
                                     @media print {
 
-                                        /* Sembunyikan elemen yang tidak perlu saat print */
+                                        /* Hilangkan semua elemen di luar printArea */
                                         body * {
                                             visibility: hidden !important;
                                         }
 
-                                        /* Tampilkan hanya area print */
                                         #printArea,
                                         #printArea * {
                                             visibility: visible !important;
@@ -196,73 +225,34 @@
                                             width: 100%;
                                             background: white;
                                             color: black;
-                                            padding: 20px;
-                                            font-size: 12px;
-                                        }
-
-                                        /* Hilangkan semua batasan tinggi dan overflow */
-                                        #printArea * {
-                                            overflow: visible !important;
-                                            max-height: none !important;
-                                            height: auto !important;
+                                            padding: 10px;
+                                            font-size: 11px;
                                         }
 
                                         /* Gaya tabel agar rapi saat dicetak */
                                         #printArea table {
                                             width: 100%;
                                             border-collapse: collapse;
-                                            page-break-inside: auto;
+                                            table-layout: fixed;
                                         }
 
                                         #printArea th,
                                         #printArea td {
                                             border: 1px solid #000;
-                                            padding: 6px;
-                                            text-align: left;
-                                            font-size: 11px;
-                                            page-break-inside: avoid;
+                                            padding: 4px;
+                                            font-size: 9.5px;
+                                            word-wrap: break-word;
                                         }
 
                                         #printArea th {
-                                            background-color: #e0e0e0;
+                                            background-color: #eee;
                                             font-weight: bold;
                                             text-transform: uppercase;
                                         }
 
-                                        #printArea tr {
-                                            page-break-inside: avoid;
-                                            page-break-after: auto;
-                                        }
-
-                                        /* Tambahkan header laporan di atas */
-                                        #printHeader {
-                                            display: block;
-                                            text-align: center;
-                                            margin-bottom: 15px;
-                                        }
-
-                                        #printHeader h2 {
-                                            margin: 0;
-                                            font-size: 16px;
-                                            text-transform: uppercase;
-                                        }
-
-                                        #printHeader p {
-                                            margin: 4px 0;
-                                            font-size: 12px;
-                                        }
-
-                                        /* Hilangkan warna biru Tailwind */
-                                        #printArea tr:nth-child(even) {
-                                            background: #f9f9f9 !important;
-                                        }
-
-                                        /* Jangan ada shadow atau border luar */
-                                        #printArea .shadow-lg,
-                                        #printArea .rounded-lg,
-                                        #printArea .border {
-                                            box-shadow: none !important;
-                                            border: none !important;
+                                        /* Hilangkan kolom Aksi */
+                                        .no-print {
+                                            display: none !important;
                                         }
 
                                         /* Pastikan tabel tidak terpotong antar halaman */
@@ -277,51 +267,68 @@
 
                                 <script>
                                     function printTable() {
-                                        // Tambahkan header sementara di atas tabel
-                                        const headerHTML = `
-        <div id="printHeader">
-            <h2>LAPORAN TRANSAKSI PENJUALAN</h2>
-            <p>Warung Golpal</p>
-            <p>Periode: {{ $start ?? '-' }} s.d {{ $end ?? '-' }}</p>
-            <hr style="margin-top:8px;">
-        </div>
-    `;
-
-                                        // Ambil container tabel utama
-                                        const tableContainer = document.querySelector('.hidden.md\\:block');
-                                        if (tableContainer) {
-                                            const printArea = document.createElement('div');
-                                            printArea.id = 'printArea';
-                                            printArea.innerHTML = headerHTML + tableContainer.innerHTML;
-
-                                            // 🚫 Hapus kolom aksi (header & semua cell)
-                                            const actionHeaders = printArea.querySelectorAll('th, td');
-                                            actionHeaders.forEach(cell => {
-                                                const text = cell.innerText.trim().toLowerCase();
-                                                if (text === 'aksi' || text === 'action') {
-                                                    const index = cell.cellIndex;
-                                                    const rows = cell.closest('table').rows;
-                                                    for (let r = 0; r < rows.length; r++) {
-                                                        if (rows[r].cells[index]) {
-                                                            rows[r].deleteCell(index);
-                                                        }
-                                                    }
-                                                }
-                                            });
-
-                                            // Tambahkan sementara ke body
-                                            document.body.appendChild(printArea);
-
-                                            // Jalankan print
-                                            window.print();
-
-                                            // Hapus area print setelah selesai
-                                            printArea.remove();
-                                        } else {
-                                            alert('Tabel tidak ditemukan di halaman.');
+                                        const table = document.querySelector('table');
+                                        if (!table) {
+                                            alert('Tabel tidak ditemukan');
+                                            return;
                                         }
+
+                                        // Clone tabel agar bisa manipulasi kolom tanpa mengubah halaman asli
+                                        const clone = table.cloneNode(true);
+
+                                        // Hapus kolom Aksi di clone
+                                        const aksiIndex = Array.from(clone.querySelectorAll('th')).findIndex(th => th.innerText.toLowerCase().includes(
+                                            'aksi'));
+                                        if (aksiIndex >= 0) {
+                                            clone.querySelectorAll('tr').forEach(tr => {
+                                                const cell = tr.children[aksiIndex];
+                                                if (cell) cell.remove();
+                                            });
+                                        }
+
+                                        // Buat iframe untuk print
+                                        const iframe = document.createElement('iframe');
+                                        iframe.style.position = 'fixed';
+                                        iframe.style.right = '0';
+                                        iframe.style.bottom = '0';
+                                        iframe.style.width = '0';
+                                        iframe.style.height = '0';
+                                        iframe.style.border = '0';
+                                        document.body.appendChild(iframe);
+
+                                        const doc = iframe.contentWindow.document;
+                                        doc.open();
+                                        doc.write(`
+            <html>
+            <head>
+                <title>Print</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 10px; margin: 10px; }
+                    h2 { text-align: center; margin-bottom: 4px; font-size: 14px; }
+                    p { text-align: center; margin: 2px 0 6px; font-size: 11px; }
+                    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                    th, td { border: 1px solid #000; padding: 4px; font-size: 9.5px; word-wrap: break-word; }
+                    th { background: #eee; text-transform: uppercase; }
+                </style>
+            </head>
+            <body>
+                <h2>LAPORAN TRANSAKSI PENJUALAN</h2>
+                <p>Warung Golpal</p>
+                <p>Periode: {{ $start ?? '-' }} s.d {{ $end ?? '-' }}</p>
+                ${clone.outerHTML}
+            </body>
+            </html>
+        `);
+                                        doc.close();
+
+                                        setTimeout(() => {
+                                            iframe.contentWindow.focus();
+                                            iframe.contentWindow.print();
+                                            setTimeout(() => document.body.removeChild(iframe), 1000);
+                                        }, 500);
                                     }
                                 </script>
+
                             </div>
 
                             {{-- 🔍 Search Box Modern --}}
@@ -379,7 +386,9 @@
                                         <th class="px-4 py-2">Nomor</th>
                                         <th class="px-4 py-2">Metode</th>
                                         <th class="px-4 py-2">Sub Total</th>
-                                        <th class="px-4 py-2">Total Bayar</th>
+                                        <th class="px-4 py-2">Diskon</th>
+                                        <th class="px-4 py-2">Total</th>
+                                        <th class="px-4 py-2">Jumlah Bayar</th>
                                         <th class="px-4 py-2">Kembalian</th>
                                         <th class="px-4 py-2">Total Modal</th>
                                         <th class="px-4 py-2">Profit</th>
@@ -395,13 +404,18 @@
                                             </td>
                                             <td class="px-4 py-2 font-semibold text-gray-800">{{ $trx->no_invoice }}
                                             </td>
-                                            <td class="px-4 py-2">
-                                                {{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d F Y') }}
+                                            <td class="px-4 py-2">{{ $trx->created_at->translatedFormat('d F Y') }}
                                             </td>
-                                            <td class="px-4 py-2">{{ $trx->nama_user }}</td>
-                                            <td class="px-4 py-2">{{ $trx->nama_pelanggan ?? '-' }}</td>
-                                            <td class="px-4 py-2">{{ $trx->nomor_pelanggan ?? '-' }}</td>
-                                            <td class="px-4 py-2">{{ $trx->metode_pembayaran }}</td>
+                                            <td class="px-4 py-2">{{ $trx->user->name ?? '-' }}</td>
+                                            <td class="px-4 py-2">{{ $trx->customer->nama ?? 'Umum' }}</td>
+                                            <td class="px-4 py-2">{{ $trx->customer->no_telepon ?? '-' }}</td>
+                                            <td class="px-4 py-2">{{ ucfirst($trx->metode_pembayaran) }}</td>
+                                            <td class="px-4 py-2 font-semibold text-gray-800">
+                                                Rp{{ number_format($trx->subtotal, 0, ',', '.') }}
+                                            </td>
+                                            <td class="px-4 py-2 font-semibold text-gray-800">
+                                                Rp{{ number_format($trx->diskon, 0, ',', '.') }}
+                                            </td>
                                             <td class="px-4 py-2 font-semibold text-gray-800">
                                                 Rp{{ number_format($trx->total, 0, ',', '.') }}
                                             </td>
@@ -428,131 +442,146 @@
                                                     <script>
                                                         async function cetakStruk(id) {
                                                             try {
-                                                                // 🔁 Ambil data transaksi via AJAX
                                                                 const response = await fetch(`/transaksi/data/${id}`);
                                                                 const trx = await response.json();
 
                                                                 if (!trx) {
-                                                                    alert('Data transaksi tidak ditemukan.');
+                                                                    alert('Data transaksi tidak ditemukan');
                                                                     return;
                                                                 }
 
-                                                                // 🧾 Buat HTML struk
-                                                                const printArea = document.createElement('div');
-                                                                printArea.id = 'print-area';
-                                                                printArea.innerHTML = `
-            <div style="text-align: center; margin-bottom: 10px;">
-                <h2>Warung Golpal</h2>
-                <small style="font-size: 16px;">${trx.tanggal}</small>
-            </div>
+                                                                // 🖨️ IFRAME KHUSUS PRINT
+                                                                const iframe = document.createElement('iframe');
+                                                                iframe.style.position = 'fixed';
+                                                                iframe.style.width = '0';
+                                                                iframe.style.height = '0';
+                                                                iframe.style.border = '0';
 
-            <p style="margin-bottom: 12px;">
-                <strong>No. Invoice:</strong> ${trx.no_invoice ?? '-'}<br>
-                <strong>Pelanggan:</strong> ${trx.nama_pelanggan ?? '-'}<br>
-                <strong>Kasir:</strong> ${trx.nama_user}<br>
-                <strong>Pembayaran:</strong> ${trx.metode_pembayaran.toUpperCase()}
-            </p>
+                                                                document.body.appendChild(iframe);
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
-                ${trx.details.map(item => `
-                                                                        <tr>
-                                                                            <td colspan="2" style="border-bottom: 1px dashed #000; padding-bottom: 3px;">
-                                                                                <strong style="text-transform: uppercase;">${item.nama_product}</strong>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td style="width: 60%;">${item.jumlah} x Rp${item.harga.toLocaleString('id-ID')}</td>
-                                                                            <td style="width: 40%; text-align: right;">Rp${item.total.toLocaleString('id-ID')}</td>
-                                                                        </tr>
-                                                                    `).join('')}
-            </table>
-
-            <hr style="border: none; border-top: 2px dashed #000; margin: 12px 0;">
-
-            <table style="width: 100%; font-weight: bold;">
-                <tr><td>Total</td><td style="text-align: right;">Rp${trx.total.toLocaleString('id-ID')}</td></tr>
-                <tr><td>Bayar</td><td style="text-align: right;">Rp${trx.jumlah_bayar.toLocaleString('id-ID')}</td></tr>
-                <tr><td>Kembali</td><td style="text-align: right;">Rp${trx.kembalian.toLocaleString('id-ID')}</td></tr>
-            </table>
-
-            <p style="text-align: center; margin-top: 25px; text-transform: uppercase;">
-                *** Terima kasih ***<br>Warung Golpal
-            </p>
-        `;
-
-                                                                // 🎨 Tambahkan style yang benar-benar fokus ke area print
-                                                                const style = document.createElement('style');
-                                                                style.textContent = `
-    @media print {
-        body * {
-            visibility: hidden !important;
-        }
-
-        #print-area, #print-area * {
-            visibility: visible !important;
-        }
-
-        #print-area {
-            position: fixed;
-            inset: 0;
-            margin: auto;
-            width: 300px;
-            background: #fff;
-            padding: 20px;
+                                                                const doc = iframe.contentWindow.document;
+                                                                doc.open();
+                                                                doc.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Struk</title>
+    <style>
+        body {
             font-family: monospace;
             font-size: 14px;
-            line-height: 1.5;
-            border: none;
-            text-align: left;
-            page-break-inside: avoid; /* 🚫 Cegah terpotong antar halaman */
+            margin: 0;
+            padding: 10px;
         }
-
-        #print-area h2 {
-            font-size: 18px;
-            text-transform: uppercase;
-            margin: 0 0 5px 0;
+        h2 {
+            text-align: center;
+            margin: 0;
         }
-
-        #print-area hr {
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        td {
+            padding: 2px 0;
+        }
+        hr {
             border: none;
             border-top: 2px dashed #000;
             margin: 10px 0;
         }
-
         @page {
-            size: auto; /* ⚙️ Biarkan tinggi menyesuaikan isi */
-            margin: 0mm; /* 🚫 Hilangkan margin printer */
+            size: auto;
+            margin: 0;
         }
+    </style>
+</head>
+<body>
+    <h2>Warung Golpal</h2>
+  <p style="text-align:center;">
+  ${new Date(trx.created_at).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+  })}
+</p>
+</p>
 
-        html, body {
-            height: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden; /* 🧩 Hindari halaman berganda */
-        }
-    }
-`;
+   <p>
+    <strong>No. Invoice:</strong> ${trx.no_invoice}<br>
+    <strong>Kasir:</strong> ${trx.user?.name ?? '-'}<br>
+    <strong>Pelanggan:</strong> ${trx.customer?.nama ?? 'Umum'}<br>
+    <strong>Nomor:</strong> ${trx.customer?.no_telepon ?? '-'}<br>
+    <strong>Metode:</strong> ${trx.metode_pembayaran?.toUpperCase() ?? '-'}
+</p>
+
+<hr>
+
+${(trx.details ?? []).map(item => `
+                                                                                                                                                                                                                    <div>
+                                                                                                                                                                                                                        <strong>${item.product?.nama_product ?? item.nama_product}</strong><br>
+                                                                                                                                                                                                                        ${(item.jumlah ?? 0)} x Rp${(item.harga ?? 0).toLocaleString('id-ID')}
+                                                                                                                                                                                                                        <span style="float:right;">
+                                                                                                                                                                                                                            Rp${(item.total ?? 0).toLocaleString('id-ID')}
+                                                                                                                                                                                                                        </span>
+                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                `).join('')}
+
+<hr>
+
+<table>
+    <tr>
+        <td>Sub Total</td>
+        <td style="text-align:right;">Rp${(trx.subtotal ?? 0).toLocaleString('id-ID')}</td>
+    </tr>
+    <tr>
+        <td>Diskon</td>
+        <td style="text-align:right;">Rp${(trx.diskon ?? 0).toLocaleString('id-ID')}</td>
+    </tr>
+    <tr>
+        <td>Total</td>
+        <td style="text-align:right;">Rp${(trx.total ?? 0).toLocaleString('id-ID')}</td>
+    </tr>
+    <tr>
+        <td>Bayar</td>
+        <td style="text-align:right;">Rp${(trx.jumlah_bayar ?? 0).toLocaleString('id-ID')}</td>
+    </tr>
+    <tr>
+        <td>Kembali</td>
+        <td style="text-align:right;">Rp${(trx.kembalian ?? 0).toLocaleString('id-ID')}</td>
+    </tr>
+</table>
+
+<p style="text-align:center; margin-top:12px;">
+    *** TERIMA KASIH ***
+</p>
 
 
-                                                                document.body.appendChild(style);
-                                                                document.body.appendChild(printArea);
+</body>
+</html>
+        `);
+                                                                doc.close();
 
-                                                                // 🖨️ Jalankan print popup
-                                                                window.print();
-
-                                                                // 🧹 Bersihkan setelah print
+                                                                // ⏳ WAJIB DELAY DI MOBILE
                                                                 setTimeout(() => {
-                                                                    printArea.remove();
-                                                                    style.remove();
-                                                                }, 1000);
+                                                                    iframe.contentWindow.focus();
+                                                                    iframe.contentWindow.print();
 
-                                                            } catch (error) {
-                                                                console.error('Error cetak struk:', error);
-                                                                alert('Terjadi kesalahan saat mencetak struk.');
+                                                                    setTimeout(() => {
+                                                                        document.body.removeChild(iframe);
+                                                                    }, 1000);
+                                                                }, 500);
+
+                                                            } catch (err) {
+                                                                console.error(err);
+                                                                alert('Gagal mencetak struk');
                                                             }
                                                         }
                                                     </script>
-
 
                                                     {{-- Detail Transaksi --}}
                                                     <button type="button"
@@ -607,20 +636,48 @@
                                     class="text-white hover:text-gray-200 font-bold text-xl">&times;</button>
                             </div>
 
-                            {{-- Nomor Invoice --}}
-                            <div class="px-6 py-3 border-b border-gray-200 bg-blue-50">
-                                <span class="text-sm text-gray-700 font-medium">No. Invoice: </span>
-                                <span class="text-gray-900 font-semibold">{{ $trx->no_invoice }}</span>
+                            {{-- Nomor Invoice + Kasir --}}
+                            <div class="px-6 py-3 border-b border-gray-200 bg-blue-50 flex justify-between">
+                                <div>
+                                    <span class="text-sm text-gray-700 font-medium">No. Invoice: </span>
+                                    <span class="text-gray-900 font-semibold">{{ $trx->no_invoice }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-sm text-gray-700 font-medium">Kasir: </span>
+                                    <span class="text-gray-900 font-semibold">{{ $trx->user->name ?? '-' }}</span>
+                                </div>
                             </div>
 
                             {{-- Ringkasan Transaksi --}}
-                            <div class="px-6 py-3 bg-blue-50 border-b border-gray-200 space-y-1">
+                            <div class="px-6 py-3 bg-blue-50 border-b border-gray-200 grid grid-cols-2 gap-2">
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Pelanggan:</span>
+                                    <span class="font-semibold">{{ $trx->customer->nama ?? 'Umum' }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Nomor:</span>
+                                    <span class="font-semibold">{{ $trx->customer->no_telepon ?? '-' }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Metode:</span>
+                                    <span class="font-semibold">{{ ucfirst($trx->metode_pembayaran) }}</span>
+                                </div>
                                 <div class="flex justify-between text-gray-700">
                                     <span>Sub Total:</span>
+                                    <span
+                                        class="font-semibold">Rp{{ number_format($trx->subtotal, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Diskon:</span>
+                                    <span
+                                        class="font-semibold">Rp{{ number_format($trx->diskon, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Total:</span>
                                     <span class="font-semibold">Rp{{ number_format($trx->total, 0, ',', '.') }}</span>
                                 </div>
                                 <div class="flex justify-between text-gray-700">
-                                    <span>Total Bayar:</span>
+                                    <span>Bayar:</span>
                                     <span
                                         class="font-semibold">Rp{{ number_format($trx->jumlah_bayar, 0, ',', '.') }}</span>
                                 </div>
@@ -715,25 +772,25 @@
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <span>{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d F Y') }}</span>
+                                        <span>{{ $trx->created_at->translatedFormat('d F Y') }}</span>
                                     </div>
                                 </div>
 
                                 {{-- Kasir --}}
                                 <div class="flex items-center space-x-2 text-white font-medium">
                                     <i class="fa-solid fa-cash-register"></i>
-                                    <span>Kasir: {{ $trx->nama_user }}</span>
+                                    <span>Kasir: {{ $trx->user->name ?? '-' }}</span>
                                 </div>
 
                                 {{-- Ringkasan --}}
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
                                     <div class="flex items-center space-x-2 text-white">
                                         <i class="fa-solid fa-user"></i>
-                                        <span><strong>Pelanggan:</strong> {{ $trx->nama_pelanggan ?? '-' }}</span>
+                                        <span><strong>Pelanggan:</strong> {{ $trx->customer->nama ?? 'Umum' }}</span>
                                     </div>
                                     <div class="flex items-center space-x-2 text-white">
                                         <i class="fa-solid fa-phone"></i>
-                                        <span><strong>Nomor:</strong> {{ $trx->nomor_pelanggan ?? '-' }}</span>
+                                        <span><strong>Nomor:</strong> {{ $trx->customer->no_telepon ?? '-' }}</span>
                                     </div>
                                     <div class="flex items-center space-x-2 text-white">
                                         <i class="fa-solid fa-credit-card"></i>
@@ -741,21 +798,21 @@
                                     </div>
                                     <div class="flex items-center space-x-2 text-white">
                                         <i class="fa-solid fa-box"></i>
-                                        <span><strong>Total Modal:</strong>
-                                            Rp{{ number_format($trx->total_modal, 0, ',', '.') }}</span>
+                                        <span><strong>Subtotal:</strong>
+                                            Rp{{ number_format($trx->subtotal, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-white">
+                                        <i class="fa-solid fa-percent"></i>
+                                        <span><strong>Diskon:</strong>
+                                            Rp{{ number_format($trx->diskon, 0, ',', '.') }}</span>
                                     </div>
                                     <div class="flex items-center space-x-2 text-white">
                                         <i class="fa-solid fa-dollar-sign"></i>
-                                        <span><strong>Profit:</strong>
-                                            Rp{{ number_format($trx->profit, 0, ',', '.') }}</span>
-                                    </div>
-                                    <div class="flex items-center space-x-2 text-white">
-                                        <i class="fa-solid fa-money-bill-wave"></i>
                                         <span><strong>Total:</strong>
                                             Rp{{ number_format($trx->total, 0, ',', '.') }}</span>
                                     </div>
                                     <div class="flex items-center space-x-2 text-white">
-                                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                                        <i class="fa-solid fa-money-bill-wave"></i>
                                         <span><strong>Bayar:</strong>
                                             Rp{{ number_format($trx->jumlah_bayar, 0, ',', '.') }}</span>
                                     </div>
@@ -763,6 +820,16 @@
                                         <i class="fa-solid fa-coins"></i>
                                         <span><strong>Kembalian:</strong>
                                             Rp{{ number_format($trx->kembalian, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-white">
+                                        <i class="fa-solid fa-boxes-stacked"></i>
+                                        <span><strong>Total Modal:</strong>
+                                            Rp{{ number_format($trx->total_modal, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-white">
+                                        <i class="fa-solid fa-money-bill-trend-up"></i>
+                                        <span><strong>Profit:</strong>
+                                            Rp{{ number_format($trx->profit, 0, ',', '.') }}</span>
                                     </div>
                                 </div>
 
@@ -848,34 +915,77 @@
                                                 class="text-white hover:text-gray-200 font-bold text-xl">&times;</button>
                                         </div>
 
-                                        {{-- Nomor Invoice --}}
-                                        <div class="px-6 py-3 border-b border-gray-200">
-                                            <span class="text-sm text-gray-700 font-medium">No. Invoice: </span>
-                                            <span class="text-gray-900 font-semibold">{{ $trx->no_invoice }}</span>
+                                        {{-- Nomor Invoice & Kasir --}}
+                                        <div
+                                            class="px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+                                            <span class="text-sm text-gray-700 font-medium">
+                                                No. Invoice: <span
+                                                    class="text-gray-900 font-semibold">{{ $trx->no_invoice }}</span>
+                                            </span>
+
+                                            <span class="text-sm text-gray-700 font-medium">
+                                                Kasir: <span
+                                                    class="font-semibold">{{ $trx->user->name ?? '-' }}</span>
+                                            </span>
                                         </div>
 
                                         {{-- Ringkasan Transaksi --}}
-                                        <div class="px-6 py-3 bg-blue-50 border-b border-gray-200 space-y-1">
+                                        <div
+                                            class="px-6 py-3 bg-blue-50 border-b border-gray-200 grid grid-cols-2 gap-2">
+                                            <div class="flex justify-between text-gray-700">
+                                                <span>Pelanggan:</span>
+                                                <span
+                                                    class="font-semibold">{{ $trx->customer->nama ?? 'Umum' }}</span>
+                                            </div>
+
+                                            <div class="flex justify-between text-gray-700">
+                                                <span>Nomor:</span>
+                                                <span
+                                                    class="font-semibold">{{ $trx->customer->no_telepon ?? '-' }}</span>
+                                            </div>
+
+                                            <div class="flex justify-between text-gray-700">
+                                                <span>Metode:</span>
+                                                <span
+                                                    class="font-semibold">{{ ucfirst($trx->metode_pembayaran) }}</span>
+                                            </div>
+
                                             <div class="flex justify-between text-gray-700">
                                                 <span>Sub Total:</span>
                                                 <span
+                                                    class="font-semibold">Rp{{ number_format($trx->subtotal, 0, ',', '.') }}</span>
+                                            </div>
+
+                                            <div class="flex justify-between text-gray-700">
+                                                <span>Diskon:</span>
+                                                <span
+                                                    class="font-semibold">Rp{{ number_format($trx->diskon, 0, ',', '.') }}</span>
+                                            </div>
+
+                                            <div class="flex justify-between text-gray-700">
+                                                <span>Total:</span>
+                                                <span
                                                     class="font-semibold">Rp{{ number_format($trx->total, 0, ',', '.') }}</span>
                                             </div>
+
                                             <div class="flex justify-between text-gray-700">
-                                                <span>Total Bayar:</span>
+                                                <span>Bayar:</span>
                                                 <span
                                                     class="font-semibold">Rp{{ number_format($trx->jumlah_bayar, 0, ',', '.') }}</span>
                                             </div>
+
                                             <div class="flex justify-between text-gray-700">
                                                 <span>Kembalian:</span>
                                                 <span
                                                     class="font-semibold">Rp{{ number_format($trx->kembalian, 0, ',', '.') }}</span>
                                             </div>
+
                                             <div class="flex justify-between text-gray-700">
                                                 <span>Total Modal:</span>
                                                 <span
                                                     class="font-semibold">Rp{{ number_format($trx->total_modal, 0, ',', '.') }}</span>
                                             </div>
+
                                             <div class="flex justify-between text-gray-700">
                                                 <span>Profit:</span>
                                                 <span

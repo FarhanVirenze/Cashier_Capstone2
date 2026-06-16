@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\CartItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,14 +13,20 @@ class PosController extends Controller
     {
         $query = Product::query();
 
-        // Jika ada input pencarian
-        if ($request->has('product-search') && $request->input('product-search') != '') {
-            $query->where('nama', 'like', '%' . $request->input('product-search') . '%');
+        if ($request->filled('product-search')) {
+            $search = $request->input('product-search');
+
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%");
+            });
         }
 
         $products = $query->latest()->paginate(12);
 
-        $items = CartItem::with('product')->where('user_id', Auth::id())->get();
+        $items = CartItem::with('product')
+            ->where('user_id', Auth::id())
+            ->get();
 
         return view('pos.index', compact('products', 'items'));
     }

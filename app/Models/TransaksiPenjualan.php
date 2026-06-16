@@ -12,17 +12,18 @@ class TransaksiPenjualan extends Model
     protected $table = 'transaksi_penjualan';
 
     protected $fillable = [
-        'no_invoice',          // tambahan
-        'tanggal',
-        'nama_pelanggan',
-        'nomor_pelanggan',
-        'nama_user',
+        'no_invoice',
         'metode_pembayaran',
-        'jumlah_bayar',
+        'status_pembayaran', // ✅ WAJIB
+        'subtotal',          // ✅ WAJIB
+        'diskon',
         'total',
+        'jumlah_bayar',
         'kembalian',
-        'total_modal',         // ditambahkan
-        'profit',              // ditambahkan
+        'customer_id',
+        'user_id',
+        'total_modal',
+        'profit',
         'cetak_struk',
     ];
 
@@ -36,5 +37,19 @@ class TransaksiPenjualan extends Model
     public function details()
     {
         return $this->hasMany(DetailPenjualan::class, 'transaksi_penjualan_id', 'id');
+    }
+
+    // Relasi ke user
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id', 'id_customer')
+            ->withDefault([
+                'nama' => 'Umum',
+            ]);
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,8 +23,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useTailwind();
 
+        // Gate untuk Admin
         Gate::define('admin', function ($user) {
             return $user->is_admin == true;
+        });
+
+        Gate::define('kasir', function ($user) {
+            return $user->is_admin == false;
         });
     }
 }

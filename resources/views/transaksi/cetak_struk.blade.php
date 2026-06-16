@@ -1,5 +1,7 @@
 <h3>Struk Transaksi #{{ $transaksi->no_invoice }}</h3>
-<p>Tanggal: {{ $transaksi->tanggal }}</p>
+<p>
+    Tanggal: {{ $transaksi->created_at->timezone('Asia/Jakarta')->format('d-m-Y H:i') }}
+</p>
 <p>Pelanggan: {{ $transaksi->nama_pelanggan }}</p>
 
 <table>

@@ -2,67 +2,59 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DashboardExport;
 use App\Models\DetailPenjualan;
 use App\Models\Product;
 use App\Models\TransaksiPenjualan;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DashboardController extends Controller
 {
+    public function exportExcel(Request $request)
+    {
+        $data = $this->index($request)->getData();
+
+        return Excel::download(
+            new DashboardExport((array) $data),
+            'laporan-dashboard.xlsx'
+        );
+    }
+
+    public function exportPdf(Request $request)
+    {
+        // PANGGIL LOGIKA YANG SAMA DENGAN DASHBOARD
+        $data = $this->index($request)->getData();
+
+        $pdf = Pdf::loadView('dashboard.export.pdf', (array) $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('laporan-dashboard.pdf');
+    }
+
     public function index(Request $request)
     {
-        // 🔹 Ambil filter dari request
-        $filter = $request->get('filter', 'semua'); // semua | hari_ini | bulan_ini | tahun_ini | rentang
+        $user = $request->user();
+
+        $filter = $request->get('filter', 'semua');
         $tanggalMulai = $request->get('tanggal_mulai');
         $tanggalSelesai = $request->get('tanggal_selesai');
+        $filterUserId = $request->get('user_id', 'semua');
 
-        // 🔹 Query filter reusable untuk tabel TransaksiPenjualan
-        $queryFilter = function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
-            if ($filter === 'hari_ini') {
-                $query->whereDate('tanggal', Carbon::today());
-            } elseif ($filter === 'bulan_ini') {
-                $query->whereMonth('tanggal', Carbon::now()->month)
-                    ->whereYear('tanggal', Carbon::now()->year);
-            } elseif ($filter === 'tahun_ini') {
-                $query->whereYear('tanggal', Carbon::now()->year);
-            } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                $query->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]);
-            }
-        };
+        if (! $user->is_admin) {
+            $filterUserId = $user->id;
+        }
 
-        /* ============================================================
-         * 1️⃣ PENJUALAN HARIAN (Grafik Pendapatan)
-         * ============================================================ */
-        $penjualanHarian = TransaksiPenjualan::select(
-            DB::raw('DATE(tanggal) as tanggal'),
-            DB::raw('SUM(total) as total')
-        )
-            ->when($filter !== 'semua', $queryFilter)
-            ->groupBy(DB::raw('DATE(tanggal)'))
-            ->orderBy('tanggal', 'ASC')
-            ->get();
-
-        /* ============================================================
-         * 2️⃣ JUMLAH TRANSAKSI HARIAN
-         * ============================================================ */
-        $transaksiHarian = TransaksiPenjualan::select(
-            DB::raw('DATE(tanggal) as tanggal'),
-            DB::raw('COUNT(*) as jumlah')
-        )
-            ->when($filter !== 'semua', $queryFilter)
-            ->groupBy(DB::raw('DATE(tanggal)'))
-            ->orderBy('tanggal', 'ASC')
-            ->get();
-
-        /* ============================================================
-         * 3️⃣ TOTAL PENGGUNA DAN PRODUK TERJUAL
-         * ============================================================ */
-        $jumlahUser = User::count();
-
-        $produkTerjual = DetailPenjualan::when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER TANGGAL (created_at)
+        |--------------------------------------------------------------------------
+        */
+        $queryTanggal = function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
             if ($filter === 'hari_ini') {
                 $query->whereDate('created_at', Carbon::today());
             } elseif ($filter === 'bulan_ini') {
@@ -71,133 +63,255 @@ class DashboardController extends Controller
             } elseif ($filter === 'tahun_ini') {
                 $query->whereYear('created_at', Carbon::now()->year);
             } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                $query->whereBetween('created_at', [$tanggalMulai, $tanggalSelesai]);
+                $query->whereBetween('created_at', [
+                    Carbon::parse($tanggalMulai)->startOfDay(),
+                    Carbon::parse($tanggalSelesai)->endOfDay(),
+                ]);
             }
-        })->sum('jumlah');
+        };
 
-        /* ============================================================
-         * 4️⃣ TOTAL PRODUK & STOK TERSEDIA (Top 5)
-         * ============================================================ */
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER USER
+        |--------------------------------------------------------------------------
+        */
+        $queryUser = function ($query) use ($user, $filterUserId) {
+            if (! $user->is_admin) {
+                $query->where('user_id', $user->id);
+            } elseif ($filterUserId !== 'semua') {
+                $query->where('user_id', $filterUserId);
+            }
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN USER
+        |--------------------------------------------------------------------------
+        */
+        $users = User::orderBy('name')->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | PENJUALAN HARIAN (created_at)
+        |--------------------------------------------------------------------------
+        */
+        $penjualanHarian = TransaksiPenjualan::select(
+            DB::raw('DATE(created_at) as tanggal'),
+            DB::raw('SUM(total) as total')
+        )
+            ->when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('tanggal')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | JUMLAH TRANSAKSI HARIAN (created_at)
+        |--------------------------------------------------------------------------
+        */
+        $transaksiHarian = TransaksiPenjualan::select(
+            DB::raw('DATE(created_at) as tanggal'),
+            DB::raw('COUNT(*) as jumlah')
+        )
+            ->when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('tanggal')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL USER
+        |--------------------------------------------------------------------------
+        */
+        $jumlahUser = $user->is_admin ? User::count() : 1;
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUK TERJUAL
+        |--------------------------------------------------------------------------
+        */
+        $produkTerjual = DetailPenjualan::when(true, function ($query) use ($user, $filterUserId) {
+            if (! $user->is_admin) {
+                $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $user->id));
+            } elseif ($filterUserId !== 'semua') {
+                $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $filterUserId));
+            }
+        })
+            ->when($filter !== 'semua', $queryTanggal)
+            ->sum('jumlah');
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUK & STOK
+        |--------------------------------------------------------------------------
+        */
         $jumlahProduk = Product::count();
-        // Untuk chart (Top 5)
         $stokTersediaChart = Product::orderBy('stok', 'DESC')->take(5)->get();
+        $stokTersediaTable = Product::orderBy('nama', 'ASC')->paginate(5, ['*'], 'stok_page');
 
-        // Untuk tabel (semua)
-        $stokTersediaTable = Product::orderBy('nama', 'ASC')
-            ->paginate(5, ['*'], 'stok_page');
-
-        /* ============================================================
-         * 5️⃣ PRODUK TERLARIS (Top 5)
-         * ============================================================ */
-        $produkTerlarisChart = DetailPenjualan::select('product_id', DB::raw('SUM(jumlah) as total'))
-            ->when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
-                if ($filter === 'hari_ini') {
-                    $query->whereDate('created_at', Carbon::today());
-                } elseif ($filter === 'bulan_ini') {
-                    $query->whereMonth('created_at', Carbon::now()->month)
-                        ->whereYear('created_at', Carbon::now()->year);
-                } elseif ($filter === 'tahun_ini') {
-                    $query->whereYear('created_at', Carbon::now()->year);
-                } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                    $query->whereBetween('created_at', [$tanggalMulai, $tanggalSelesai]);
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUK TERLARIS (CHART)
+        |--------------------------------------------------------------------------
+        */
+        $produkTerlarisChart = DetailPenjualan::select(
+            'product_id',
+            DB::raw('SUM(jumlah) as total')
+        )
+            ->when(true, function ($query) use ($user, $filterUserId) {
+                if (! $user->is_admin) {
+                    $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $user->id));
+                } elseif ($filterUserId !== 'semua') {
+                    $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $filterUserId));
                 }
             })
+            ->when($filter !== 'semua', $queryTanggal)
             ->groupBy('product_id')
-            ->orderBy('total', 'DESC')
             ->with('product')
+            ->orderByDesc('total')
             ->take(5)
             ->get();
 
-        // Untuk tabel (Top 5 / paginasi), sekarang pakai filter juga
-        $produkTerlarisTable = DetailPenjualan::select('product_id', DB::raw('SUM(jumlah) as total'))
-            ->when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
-                if ($filter === 'hari_ini') {
-                    $query->whereDate('created_at', Carbon::today());
-                } elseif ($filter === 'bulan_ini') {
-                    $query->whereMonth('created_at', Carbon::now()->month)
-                        ->whereYear('created_at', Carbon::now()->year);
-                } elseif ($filter === 'tahun_ini') {
-                    $query->whereYear('created_at', Carbon::now()->year);
-                } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                    $query->whereBetween('created_at', [$tanggalMulai, $tanggalSelesai]);
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUK TERLARIS (TABLE)
+        |--------------------------------------------------------------------------
+        */
+        $produkTerlarisTable = DetailPenjualan::select(
+            'product_id',
+            DB::raw('SUM(jumlah) as total')
+        )
+            ->when(true, function ($query) use ($user, $filterUserId) {
+                if (! $user->is_admin) {
+                    $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $user->id));
+                } elseif ($filterUserId !== 'semua') {
+                    $query->whereHas('transaksi', fn ($q) => $q->where('user_id', $filterUserId));
                 }
             })
+            ->when($filter !== 'semua', $queryTanggal)
             ->groupBy('product_id')
             ->with('product')
-            ->orderBy('total', 'DESC')
+            ->orderByDesc('total')
             ->paginate(5, ['*'], 'produk_page');
-            
-        /* ============================================================
-         * 6️⃣ PROFIT HARIAN (Grafik Profit)
-         * ============================================================ */
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROFIT HARIAN (created_at)
+        |--------------------------------------------------------------------------
+        */
         $profitHarian = DetailPenjualan::join('products', 'detail_penjualan.product_id', '=', 'products.id')
+            ->join('transaksi_penjualan as t', 'detail_penjualan.transaksi_penjualan_id', '=', 't.id')
             ->select(
-                DB::raw('DATE(detail_penjualan.created_at) as tanggal'),
+                DB::raw('DATE(t.created_at) as tanggal'),
                 DB::raw('SUM((products.harga - products.modal) * detail_penjualan.jumlah) as total_profit')
             )
-            ->when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
-                if ($filter === 'hari_ini') {
-                    $query->whereDate('detail_penjualan.created_at', Carbon::today());
-                } elseif ($filter === 'bulan_ini') {
-                    $query->whereMonth('detail_penjualan.created_at', Carbon::now()->month)
-                        ->whereYear('detail_penjualan.created_at', Carbon::now()->year);
-                } elseif ($filter === 'tahun_ini') {
-                    $query->whereYear('detail_penjualan.created_at', Carbon::now()->year);
-                } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                    $query->whereBetween('detail_penjualan.created_at', [$tanggalMulai, $tanggalSelesai]);
+            ->when(true, function ($query) use ($user, $filterUserId) {
+                if (! $user->is_admin) {
+                    $query->where('t.user_id', $user->id);
+                } elseif ($filterUserId !== 'semua') {
+                    $query->where('t.user_id', $filterUserId);
                 }
             })
-            ->groupBy(DB::raw('DATE(detail_penjualan.created_at)'))
-            ->orderBy('tanggal', 'ASC')
-            ->get();
-
-        /* ============================================================
-         * 7️⃣ TOTAL PENDAPATAN & JUMLAH TRANSAKSI
-         * ============================================================ */
-        $totalPendapatan = TransaksiPenjualan::when($filter !== 'semua', $queryFilter)->sum('total') ?? 0;
-        $jumlahTransaksi = TransaksiPenjualan::when($filter !== 'semua', $queryFilter)->count();
-
-        /* ============================================================
-         * 8️⃣ TOTAL PROFIT & PERSENTASE PROFIT
-         * ============================================================ */
-        $totalProfit = DetailPenjualan::join('products', 'detail_penjualan.product_id', '=', 'products.id')
             ->when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
                 if ($filter === 'hari_ini') {
-                    $query->whereDate('detail_penjualan.created_at', Carbon::today());
+                    $query->whereDate('t.created_at', Carbon::today());
                 } elseif ($filter === 'bulan_ini') {
-                    $query->whereMonth('detail_penjualan.created_at', Carbon::now()->month)
-                        ->whereYear('detail_penjualan.created_at', Carbon::now()->year);
+                    $query->whereMonth('t.created_at', Carbon::now()->month)
+                        ->whereYear('t.created_at', Carbon::now()->year);
                 } elseif ($filter === 'tahun_ini') {
-                    $query->whereYear('detail_penjualan.created_at', Carbon::now()->year);
+                    $query->whereYear('t.created_at', Carbon::now()->year);
                 } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
-                    $query->whereBetween('detail_penjualan.created_at', [$tanggalMulai, $tanggalSelesai]);
+                    $query->whereBetween('t.created_at', [
+                        Carbon::parse($tanggalMulai)->startOfDay(),
+                        Carbon::parse($tanggalSelesai)->endOfDay(),
+                    ]);
+                }
+            })
+            ->groupBy(DB::raw('DATE(t.created_at)'))
+            ->orderBy('tanggal')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL PENDAPATAN & TRANSAKSI
+        |--------------------------------------------------------------------------
+        */
+        $totalPendapatan = TransaksiPenjualan::when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
+            ->sum('total') ?? 0;
+
+        $jumlahTransaksi = TransaksiPenjualan::when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL PROFIT
+        |--------------------------------------------------------------------------
+        */
+        $totalProfit = DetailPenjualan::join('products', 'detail_penjualan.product_id', '=', 'products.id')
+            ->join('transaksi_penjualan as t', 'detail_penjualan.transaksi_penjualan_id', '=', 't.id')
+            ->when(true, function ($query) use ($user, $filterUserId) {
+                if (! $user->is_admin) {
+                    $query->where('t.user_id', $user->id);
+                } elseif ($filterUserId !== 'semua') {
+                    $query->where('t.user_id', $filterUserId);
+                }
+            })
+            ->when($filter !== 'semua', function ($query) use ($filter, $tanggalMulai, $tanggalSelesai) {
+                if ($filter === 'hari_ini') {
+                    $query->whereDate('t.created_at', Carbon::today());
+                } elseif ($filter === 'bulan_ini') {
+                    $query->whereMonth('t.created_at', Carbon::now()->month)
+                        ->whereYear('t.created_at', Carbon::now()->year);
+                } elseif ($filter === 'tahun_ini') {
+                    $query->whereYear('t.created_at', Carbon::now()->year);
+                } elseif ($filter === 'rentang' && $tanggalMulai && $tanggalSelesai) {
+                    $query->whereBetween('t.created_at', [
+                        Carbon::parse($tanggalMulai)->startOfDay(),
+                        Carbon::parse($tanggalSelesai)->endOfDay(),
+                    ]);
                 }
             })
             ->select(DB::raw('SUM((products.harga - products.modal) * detail_penjualan.jumlah) as total_profit'))
-            ->first()
-            ->total_profit ?? 0;
+            ->value('total_profit') ?? 0;
 
-        $persentaseProfit = $totalPendapatan > 0 ? round(($totalProfit / $totalPendapatan) * 100, 2) : 0;
+        /*
+        |--------------------------------------------------------------------------
+        | PERSENTASE PROFIT
+        |--------------------------------------------------------------------------
+        */
+        $persentaseProfit = $totalPendapatan > 0
+            ? round(($totalProfit / $totalPendapatan) * 100, 2)
+            : 0;
 
-        /* ============================================================
-         * 9️⃣ DISTRIBUSI METODE PEMBAYARAN
-         * ============================================================ */
-        $metodePembayaran = TransaksiPenjualan::select('metode_pembayaran', DB::raw('COUNT(*) as total'))
-            ->when($filter !== 'semua', $queryFilter)
+        /*
+        |--------------------------------------------------------------------------
+        | METODE PEMBAYARAN
+        |--------------------------------------------------------------------------
+        */
+        $metodePembayaran = TransaksiPenjualan::select(
+            'metode_pembayaran',
+            DB::raw('COUNT(*) as total')
+        )
+            ->when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
             ->groupBy('metode_pembayaran')
             ->get();
 
-        /* ============================================================
-         * 🔟 TRANSAKSI TERAKHIR (5 terakhir)
-         * ============================================================ */
-        $transaksiTerakhir = TransaksiPenjualan::when($filter !== 'semua', $queryFilter)
-            ->orderBy('tanggal', 'DESC')
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSAKSI TERAKHIR
+        |--------------------------------------------------------------------------
+        */
+        $transaksiTerakhir = TransaksiPenjualan::when($filter !== 'semua', $queryTanggal)
+            ->when(true, $queryUser)
+            ->orderBy('created_at', 'DESC')
             ->take(5)
             ->get();
 
-        /* ============================================================
-         * 🔚 RETURN KE VIEW
-         * ============================================================ */
         return view('dashboard', compact(
             'penjualanHarian',
             'transaksiHarian',
@@ -217,7 +331,9 @@ class DashboardController extends Controller
             'transaksiTerakhir',
             'filter',
             'tanggalMulai',
-            'tanggalSelesai'
+            'tanggalSelesai',
+            'users',
+            'filterUserId'
         ));
     }
 }

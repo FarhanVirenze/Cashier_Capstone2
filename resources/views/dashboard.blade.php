@@ -1,8 +1,26 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-200 dark:text-gray-200 leading-tight flex items-center gap-3">
-            <span>{{ __('Dashboard') }}</span>
-        </h2>
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-200 dark:text-gray-200 leading-tight">
+                {{ __('Dashboard') }}
+            </h2>
+
+            <div class="flex items-center gap-2">
+                <a href="{{ route('dashboard.export.pdf', request()->query()) }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
+                bg-red-600 text-white rounded-xl hover:bg-red-700 transition">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF
+                </a>
+
+                <a href="{{ route('dashboard.export.excel', request()->query()) }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
+                bg-green-600 text-white rounded-xl hover:bg-green-700 transition">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+                </a>
+            </div>
+        </div>
     </x-slot>
 
     <script src="https://kit.fontawesome.com/a2e0f1f3f1.js" crossorigin="anonymous"></script>
@@ -16,50 +34,103 @@
                     Filter Data
                 </h3>
 
+                @php
+                    $isFilterUsed =
+                        (request('filter') && request('filter') !== 'semua') ||
+                        request()->filled('tanggal_mulai') ||
+                        request()->filled('tanggal_selesai') ||
+                        (auth()->user()->is_admin && request('user_id') && request('user_id') !== 'semua');
+                @endphp
+
                 <form method="GET" action="{{ route('dashboard') }}"
                     class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 items-end">
 
                     {{-- Tipe Filter --}}
                     <div>
-                        <label class="text-gray-700 font-medium text-sm mb-1 block">Tipe Filter</label>
+                        <label class="text-gray-700 font-medium text-sm mb-1 block">
+                            Filter Berdasarkan Waktu
+                        </label>
                         <select name="filter" id="filter"
-                            class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
-                            <option value="semua" {{ request('filter') == 'semua' ? 'selected' : '' }}>Semua</option>
-                            <option value="hari_ini" {{ request('filter') == 'hari_ini' ? 'selected' : '' }}>Hari Ini
+                            class="w-full border-gray-300 rounded-xl shadow-sm
+                focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
+                            <option value="semua" {{ request('filter') == 'semua' ? 'selected' : '' }}>
+                                Semua
                             </option>
-                            <option value="bulan_ini" {{ request('filter') == 'bulan_ini' ? 'selected' : '' }}>Bulan Ini
+                            <option value="hari_ini" {{ request('filter') == 'hari_ini' ? 'selected' : '' }}>
+                                Hari Ini
                             </option>
-                            <option value="tahun_ini" {{ request('filter') == 'tahun_ini' ? 'selected' : '' }}>Tahun Ini
+                            <option value="bulan_ini" {{ request('filter') == 'bulan_ini' ? 'selected' : '' }}>
+                                Bulan Ini
                             </option>
-                            <option value="rentang" {{ request('filter') == 'rentang' ? 'selected' : '' }}>Rentang Tanggal
+                            <option value="tahun_ini" {{ request('filter') == 'tahun_ini' ? 'selected' : '' }}>
+                                Tahun Ini
+                            </option>
+                            <option value="rentang" {{ request('filter') == 'rentang' ? 'selected' : '' }}>
+                                Rentang Tanggal
                             </option>
                         </select>
+
+                        @if (request('filter') == 'rentang')
+                        @endif
                     </div>
+
+                    {{-- User Filter (Admin Only) --}}
+                    @if (auth()->user()->is_admin)
+                        <div>
+                            <label class="text-gray-700 font-medium text-sm mb-1 block">
+                                Pilih Kasir
+                            </label>
+                            <select name="user_id"
+                                class="w-full border-gray-300 rounded-xl shadow-sm
+                    focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
+                                <option value="semua" {{ $filterUserId == 'semua' ? 'selected' : '' }}>
+                                    Semua
+                                </option>
+                                @foreach ($users as $u)
+                                    <option value="{{ $u->id }}"
+                                        {{ $filterUserId == $u->id ? 'selected' : '' }}>
+                                        {{ $u->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
                     {{-- Tanggal Mulai --}}
                     <div id="tanggalMulaiWrapper" class="{{ request('filter') == 'rentang' ? '' : 'hidden' }}">
-                        <label class="text-gray-700 font-medium text-sm mb-1 block">Tanggal Mulai</label>
+                        <label class="text-gray-700 font-medium text-sm mb-1 block">
+                            Tanggal Mulai
+                        </label>
                         <input type="date" name="tanggal_mulai" value="{{ request('tanggal_mulai') }}"
-                            class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
+                            class="w-full border-gray-300 rounded-xl shadow-sm
+                focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
                     </div>
 
                     {{-- Tanggal Selesai --}}
                     <div id="tanggalSelesaiWrapper" class="{{ request('filter') == 'rentang' ? '' : 'hidden' }}">
-                        <label class="text-gray-700 font-medium text-sm mb-1 block">Tanggal Selesai</label>
+                        <label class="text-gray-700 font-medium text-sm mb-1 block">
+                            Tanggal Selesai
+                        </label>
                         <input type="date" name="tanggal_selesai" value="{{ request('tanggal_selesai') }}"
-                            class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
+                            class="w-full border-gray-300 rounded-xl shadow-sm
+                focus:ring-2 focus:ring-blue-400 focus:border-blue-400">
                     </div>
 
                     {{-- Tombol --}}
                     <div class="flex items-end space-x-2 sm:col-span-2 md:col-span-1">
                         <button type="submit"
-                            class="flex-1 bg-blue-500 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-600 hover:shadow-md transition-all duration-300">
+                            class="flex-1 bg-blue-500 text-white px-4 py-2.5 rounded-xl font-semibold
+                hover:bg-blue-600 hover:shadow-md transition-all duration-300">
                             <i class="fas fa-check-circle mr-1"></i> Tampilkan
                         </button>
-                        <a href="{{ route('dashboard') }}"
-                            class="bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-medium hover:bg-gray-300 transition-all duration-300">
-                            <i class="fas fa-undo-alt"></i> Reset
-                        </a>
+
+                        @if ($isFilterUsed)
+                            <a href="{{ route('dashboard') }}"
+                                class="bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-medium
+                    hover:bg-gray-300 transition-all duration-300">
+                                <i class="fas fa-undo-alt"></i> Reset
+                            </a>
+                        @endif
                     </div>
                 </form>
             </div>
@@ -68,12 +139,42 @@
             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
                 @php
                     $cards = [
-                        ['icon' => 'fa-boxes', 'color' => 'text-sky-500', 'label' => 'Total Produk', 'value' => $jumlahProduk],
-                        ['icon' => 'fa-shopping-cart', 'color' => 'text-indigo-500', 'label' => 'Produk Terjual', 'value' => $produkTerjual],
-                        ['icon' => 'fa-coins', 'color' => 'text-green-500', 'label' => 'Total Pendapatan', 'value' => 'Rp ' . number_format($totalPendapatan, 0, ',', '.')],
-                        ['icon' => 'fa-chart-line', 'color' => 'text-purple-500', 'label' => 'Total Profit', 'value' => 'Rp ' . number_format($totalProfit, 0, ',', '.')],
-                        ['icon' => 'fa-receipt', 'color' => 'text-amber-500', 'label' => 'Jumlah Transaksi', 'value' => $jumlahTransaksi],
-                        ['icon' => 'fa-users', 'color' => 'text-rose-500', 'label' => 'Jumlah Pengguna', 'value' => $jumlahUser],
+                        [
+                            'icon' => 'fa-boxes',
+                            'color' => 'text-sky-500',
+                            'label' => 'Total Produk',
+                            'value' => $jumlahProduk,
+                        ],
+                        [
+                            'icon' => 'fa-shopping-cart',
+                            'color' => 'text-indigo-500',
+                            'label' => 'Produk Terjual',
+                            'value' => $produkTerjual,
+                        ],
+                        [
+                            'icon' => 'fa-coins',
+                            'color' => 'text-green-500',
+                            'label' => 'Total Pendapatan',
+                            'value' => 'Rp ' . number_format($totalPendapatan, 0, ',', '.'),
+                        ],
+                        [
+                            'icon' => 'fa-chart-line',
+                            'color' => 'text-purple-500',
+                            'label' => 'Total Profit',
+                            'value' => 'Rp ' . number_format($totalProfit, 0, ',', '.'),
+                        ],
+                        [
+                            'icon' => 'fa-receipt',
+                            'color' => 'text-amber-500',
+                            'label' => 'Jumlah Transaksi',
+                            'value' => $jumlahTransaksi,
+                        ],
+                        [
+                            'icon' => 'fa-users',
+                            'color' => 'text-rose-500',
+                            'label' => 'Jumlah Pengguna',
+                            'value' => $jumlahUser,
+                        ],
                     ];
                 @endphp
 
@@ -85,7 +186,7 @@
                             <i class="fas {{ $card['icon'] }}"></i>
                         </div>
                         <p class="text-sm font-medium tracking-wide text-gray-600">{{ $card['label'] }}</p>
-                        <p class="text-2xl sm:text-3xl font-extrabold mt-1 text-gray-900">{{ $card['value'] }}</p>
+                        <p class="text-md sm:text-xl font-extrabold mt-1 text-gray-900">{{ $card['value'] }}</p>
 
                         {{-- Persentase Profit --}}
                         @if ($card['label'] === 'Total Profit')
@@ -124,12 +225,48 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 @php
                     $charts = [
-                        ['id' => 'penjualanChart', 'title' => 'Total Penjualan', 'color' => 'text-blue-700', 'icon' => 'fa-chart-line', 'border' => 'border-blue-100'],
-                        ['id' => 'profitChart', 'title' => 'Profit', 'color' => 'text-green-700', 'icon' => 'fa-hand-holding-usd', 'border' => 'border-blue-100'],
-                        ['id' => 'transaksiChart', 'title' => 'Jumlah Transaksi', 'color' => 'text-blue-700', 'icon' => 'fa-file-invoice-dollar', 'border' => 'border-blue-100'],
-                        ['id' => 'metodePembayaranChart', 'title' => 'Distribusi Metode Pembayaran', 'color' => 'text-yellow-700', 'icon' => 'fa-wallet', 'border' => 'border-blue-100'],
-                        ['id' => 'produkTerlarisChart', 'title' => 'Top 5 Produk Terlaris', 'color' => 'text-pink-700', 'icon' => 'fa-fire', 'border' => 'border-blue-100'],
-                        ['id' => 'stokProdukChart', 'title' => 'Top 5 Stok Produk', 'color' => 'text-purple-700', 'icon' => 'fa-box-open', 'border' => 'border-blue-100'],
+                        [
+                            'id' => 'penjualanChart',
+                            'title' => 'Total Penjualan',
+                            'color' => 'text-blue-700',
+                            'icon' => 'fa-chart-line',
+                            'border' => 'border-blue-100',
+                        ],
+                        [
+                            'id' => 'profitChart',
+                            'title' => 'Profit',
+                            'color' => 'text-green-700',
+                            'icon' => 'fa-hand-holding-usd',
+                            'border' => 'border-blue-100',
+                        ],
+                        [
+                            'id' => 'transaksiChart',
+                            'title' => 'Jumlah Transaksi',
+                            'color' => 'text-blue-700',
+                            'icon' => 'fa-file-invoice-dollar',
+                            'border' => 'border-blue-100',
+                        ],
+                        [
+                            'id' => 'metodePembayaranChart',
+                            'title' => 'Distribusi Metode Pembayaran',
+                            'color' => 'text-yellow-700',
+                            'icon' => 'fa-wallet',
+                            'border' => 'border-blue-100',
+                        ],
+                        [
+                            'id' => 'produkTerlarisChart',
+                            'title' => 'Top 5 Produk Terlaris',
+                            'color' => 'text-pink-700',
+                            'icon' => 'fa-fire',
+                            'border' => 'border-blue-100',
+                        ],
+                        [
+                            'id' => 'stokProdukChart',
+                            'title' => 'Top 5 Stok Produk',
+                            'color' => 'text-purple-700',
+                            'icon' => 'fa-box-open',
+                            'border' => 'border-blue-100',
+                        ],
                     ];
                 @endphp
 
@@ -183,7 +320,8 @@
                                         <span
                                             class="font-medium text-gray-800">{{ $product->nama ?? 'Tidak diketahui' }}</span>
                                     </td>
-                                    <td class="px-3 py-2 text-right font-semibold text-gray-700">{{ $item->total }}</td>
+                                    <td class="px-3 py-2 text-right font-semibold text-gray-700">{{ $item->total }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -228,7 +366,8 @@
                                         </div>
                                         <span class="font-medium text-gray-800">{{ $produk->nama }}</span>
                                     </td>
-                                    <td class="px-3 py-2 text-right font-semibold text-gray-700">{{ $produk->stok }}</td>
+                                    <td class="px-3 py-2 text-right font-semibold text-gray-700">{{ $produk->stok }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -298,14 +437,19 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#111827',
                         titleColor: '#fff',
                         bodyColor: '#d1d5db',
                         callbacks: {
-                            label: function (context) {
-                                const value = context.raw.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+                            label: function(context) {
+                                const value = context.raw.toLocaleString('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR'
+                                });
                                 const perubahan = persentasePerubahan[context.dataIndex];
                                 const tanda = perubahan >= 0 ? '🟢 +' : '🔴 ';
                                 return `${value} (${tanda}${perubahan.toFixed(2)}%)`;
@@ -318,15 +462,21 @@
                         beginAtZero: true,
                         ticks: {
                             color: textColor,
-                            callback: function (value) {
+                            callback: function(value) {
                                 return 'Rp ' + value.toLocaleString();
                             }
                         },
-                        grid: { color: gridColor }
+                        grid: {
+                            color: gridColor
+                        }
                     },
                     x: {
-                        ticks: { color: textColor },
-                        grid: { display: false }
+                        ticks: {
+                            color: textColor
+                        },
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
@@ -363,7 +513,7 @@
                     label: 'Profit Harian',
                     data: dataProfit,
                     backgroundColor: gradientProfit,
-                    borderColor: function (context) {
+                    borderColor: function(context) {
                         const index = context.dataIndex;
                         return lineColors[index];
                     },
@@ -374,7 +524,7 @@
                         }
                     },
                     borderWidth: 3,
-                    pointBackgroundColor: function (context) {
+                    pointBackgroundColor: function(context) {
                         const index = context.dataIndex;
                         return lineColors[index];
                     },
@@ -385,9 +535,14 @@
             },
             options: {
                 responsive: true,
-                interaction: { intersect: false, mode: 'index' },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#111827',
                         titleColor: '#f9fafb',
@@ -395,18 +550,18 @@
                         cornerRadius: 8,
                         padding: 12,
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 const index = context.dataIndex;
                                 const profit = context.raw;
                                 const percent = percentChanges[index].toFixed(2);
                                 const changeText =
-                                    index === 0
-                                        ? ''
-                                        : percent > 0
-                                            ? ` (+${percent}%)`
-                                            : percent < 0
-                                                ? ` (${percent}%)`
-                                                : ' (0%)';
+                                    index === 0 ?
+                                    '' :
+                                    percent > 0 ?
+                                    ` (+${percent}%)` :
+                                    percent < 0 ?
+                                    ` (${percent}%)` :
+                                    ' (0%)';
                                 return 'Rp ' + profit.toLocaleString() + changeText;
                             }
                         }
@@ -417,15 +572,21 @@
                         beginAtZero: true,
                         ticks: {
                             color: '#4b5563',
-                            callback: function (value) {
+                            callback: function(value) {
                                 return 'Rp ' + value.toLocaleString();
                             }
                         },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
                     },
                     x: {
-                        ticks: { color: '#4b5563' },
-                        grid: { display: false }
+                        ticks: {
+                            color: '#4b5563'
+                        },
+                        grid: {
+                            display: false
+                        }
                     }
                 },
                 animations: {
@@ -466,7 +627,9 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#111827',
                         titleColor: '#fff',
@@ -474,7 +637,7 @@
                         cornerRadius: 6,
                         padding: 10,
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 return ` ${context.dataset.label}: ${context.raw}`;
                             }
                         }
@@ -483,19 +646,31 @@
                         anchor: 'end',
                         align: 'top',
                         color: textColor,
-                        font: { weight: 'bold' },
+                        font: {
+                            weight: 'bold'
+                        },
                         formatter: (value) => value
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { color: textColor, stepSize: 1 },
-                        grid: { color: gridColor, drawBorder: false }
+                        ticks: {
+                            color: textColor,
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: gridColor,
+                            drawBorder: false
+                        }
                     },
                     x: {
-                        ticks: { color: textColor },
-                        grid: { display: false }
+                        ticks: {
+                            color: textColor
+                        },
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             },
@@ -525,7 +700,9 @@
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#111827',
                         titleColor: '#fff',
@@ -533,7 +710,7 @@
                         cornerRadius: 6,
                         padding: 10,
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 return ` ${context.label}: ${context.raw}`;
                             }
                         }
@@ -542,19 +719,31 @@
                         anchor: 'end',
                         align: 'top',
                         color: textColor,
-                        font: { weight: 'bold' },
+                        font: {
+                            weight: 'bold'
+                        },
                         formatter: (value) => value
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { color: textColor, stepSize: 1 },
-                        grid: { color: gridColor, drawBorder: false }
+                        ticks: {
+                            color: textColor,
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: gridColor,
+                            drawBorder: false
+                        }
                     },
                     x: {
-                        ticks: { color: textColor },
-                        grid: { display: false }
+                        ticks: {
+                            color: textColor
+                        },
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             },
@@ -574,7 +763,16 @@
             },
             options: {
                 responsive: true,
-                plugins: { legend: { labels: { color: textColor } }, datalabels: { color: '#fff' } }
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff'
+                    }
+                }
             },
             plugins: [ChartDataLabels]
         });
@@ -592,7 +790,16 @@
             },
             options: {
                 responsive: true,
-                plugins: { legend: { labels: { color: textColor } }, datalabels: { color: '#fff' } }
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff'
+                    }
+                }
             },
             plugins: [ChartDataLabels]
         });

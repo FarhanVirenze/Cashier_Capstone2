@@ -1,70 +1,92 @@
 @if ($paginator->hasPages())
-<nav role="navigation" aria-label="{{ __('Pagination Navigation') }}" class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+<nav role="navigation" class="flex justify-center mt-6 select-none">
 
-    <!-- Info jumlah item -->
-    <div>
-        <p class="text-sm text-gray-800 dark:text-gray-800">
-            {!! __('Showing') !!}
-            @if ($paginator->firstItem())
-                <span class="font-medium">{{ $paginator->firstItem() }}</span> {!! __('to') !!}
-                <span class="font-medium">{{ $paginator->lastItem() }}</span>
+    <ul class="inline-flex items-center space-x-2 text-sm font-medium">
+
+        {{-- Prev --}}
+        <li>
+            @if ($paginator->onFirstPage())
+                <span class="flex items-center gap-1 px-3 py-2 rounded-md bg-blue-700 text-white cursor-not-allowed opacity-70">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor"
+                        stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </span>
             @else
-                {{ $paginator->count() }}
+                <a href="{{ $paginator->previousPageUrl() }}"
+                    class="flex items-center gap-1 px-3 py-2 rounded-md bg-blue-700 text-white hover:bg-blue-800 hover:shadow-md transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor"
+                        stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
             @endif
-            {!! __('of') !!}
-            <span class="font-medium">{{ $paginator->total() }}</span> {!! __('results') !!}
-        </p>
-    </div>
+        </li>
 
-    <!-- Links pagination -->
-    <div class="flex flex-wrap items-center gap-2">
+        @php
+            $current = $paginator->currentPage();
+            $last = $paginator->lastPage();
+            $range = 2;
+        @endphp
 
-        {{-- Previous Page Link --}}
-        @if ($paginator->onFirstPage())
-            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-700 border border-navy-800 rounded-md cursor-not-allowed select-none opacity-70">
-                {!! __('pagination.previous') !!}
-            </span>
-        @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" 
-               class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-700 border border-navy-700 rounded-md hover:bg-blue-800 hover:shadow-md transition-all duration-200">
-                {!! __('pagination.previous') !!}
-            </a>
+        {{-- First Page --}}
+        @if ($current > 1 + $range)
+            <li>
+                <a href="{{ $paginator->url(1) }}"
+                    class="px-3 py-2 rounded-md bg-blue-700 text-white hover:bg-blue-800 hover:shadow-md transition-all duration-200">
+                    1
+                </a>
+            </li>
+            <li><span class="px-3 py-2 rounded-md bg-blue-600/50 text-white select-none cursor-default">...</span></li>
         @endif
 
-        {{-- Pagination Elements --}}
-        @foreach ($elements as $element)
-            {{-- "Three Dots" Separator --}}
-            @if (is_string($element))
-                <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600/50 border border-navy-700 rounded-md cursor-default select-none">{{ $element }}</span>
-            @endif
+        {{-- Dynamic Middle Pages --}}
+        @for ($i = max(1, $current - $range); $i <= min($last, $current + $range); $i++)
+            <li>
+                @if ($i == $current)
+                    <span class="px-3 py-2 rounded-md bg-blue-500 text-white shadow-lg select-none font-semibold">
+                        {{ $i }}
+                    </span>
+                @else
+                    <a href="{{ $paginator->url($i) }}"
+                        class="px-3 py-2 rounded-md bg-blue-700 text-white hover:bg-blue-800 hover:shadow-md transition-all duration-200">
+                        {{ $i }}
+                    </a>
+                @endif
+            </li>
+        @endfor
 
-            {{-- Array Of Links --}}
-            @if (is_array($element))
-                @foreach ($element as $page => $url)
-                    @if ($page == $paginator->currentPage())
-                        <span aria-current="page" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-800 border border-navy-700 rounded-md select-none">
-                            {{ $page }}
-                        </span>
-                    @else
-                        <a href="{{ $url }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600/80 border border-navy-700 rounded-md hover:bg-blue-700 hover:shadow-lg transition-all duration-200">
-                            {{ $page }}
-                        </a>
-                    @endif
-                @endforeach
-            @endif
-        @endforeach
-
-        {{-- Next Page Link --}}
-        @if ($paginator->hasMorePages())
-            <a href="{{ $paginator->nextPageUrl() }}" rel="next" 
-               class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-700 border border-navy-700 rounded-md hover:bg-blue-600 hover:shadow-md transition-all duration-200">
-                {!! __('pagination.next') !!}
-            </a>
-        @else
-            <span class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-700 border border-navy-800 rounded-md cursor-not-allowed select-none opacity-70">
-                {!! __('pagination.next') !!}
-            </span>
+        {{-- Last Page --}}
+        @if ($current < $last - $range)
+            <li><span class="px-3 py-2 rounded-md bg-blue-600/50 text-white select-none cursor-default">...</span></li>
+            <li>
+                <a href="{{ $paginator->url($last) }}"
+                    class="px-3 py-2 rounded-md bg-blue-700 text-white hover:bg-blue-800 hover:shadow-md transition-all duration-200">
+                    {{ $last }}
+                </a>
+            </li>
         @endif
-    </div>
+
+        {{-- Next --}}
+        <li>
+            @if ($paginator->hasMorePages())
+                <a href="{{ $paginator->nextPageUrl() }}"
+                    class="flex items-center gap-1 px-3 py-2 rounded-md bg-blue-700 text-white hover:bg-blue-800 hover:shadow-md transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor"
+                        stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            @else
+                <span class="flex items-center gap-1 px-3 py-2 rounded-md bg-blue-700 text-white cursor-not-allowed opacity-70">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor"
+                        stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </span>
+            @endif
+        </li>
+
+    </ul>
 </nav>
 @endif

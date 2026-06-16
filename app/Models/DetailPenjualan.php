@@ -14,6 +14,7 @@ class DetailPenjualan extends Model
     protected $fillable = [
         'transaksi_penjualan_id',
         'product_id',
+        'user_id',
         'nama_product',
         'foto_product',       // tambahan
         'harga',

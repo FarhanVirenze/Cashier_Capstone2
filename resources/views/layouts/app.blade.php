@@ -9,13 +9,19 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
+    <script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
+
+
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/antijingoist/open-dyslexic/webkit.css">
     <!-- Font Awesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-        integrity="sha512-papj5pql/..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -28,7 +34,8 @@
 
         <!-- Page Heading -->
         @isset($header)
-            <header class="relative shadow" style="background-image: url('{{ asset('images/navbar.png') }}'); 
+            <header class="relative shadow"
+                style="background-image: url('{{ asset('images/navbar.png') }}'); 
                    background-size: cover; 
                    background-position: center;">
                 <div class="max-w-[97%] mx-auto py-6 px-4 sm:px-6 lg:px-8 text-white">

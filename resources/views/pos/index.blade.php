@@ -5,50 +5,106 @@
                 {{ __('Point of Sale') }}
             </h2>
             <div class="flex items-center gap-4">
-                <!-- Icon Scan Barcode -->
-                <a href="{{ route('scanner.index') }}" class="relative hover:scale-110 transition-transform duration-200">
-                    <svg class="w-7 h-7 text-gray-800 dark:text-white" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 4a1 1 0 011-1h3M17 3h3a1 1 0 011 1v3M21 20a1 1 0 01-1 1h-3M4 21a1 1 0 01-1-1v-3M7 12h.01M11 12h.01M15 12h.01" />
-                    </svg>
+                <!-- Icon Scan Barcode (Highlighted) -->
+                <a href="{{ route('scanner.index') }}" class="relative group hover:scale-110 transition-all duration-300">
+                    <div
+                        class="relative p-3 bg-gradient-to-br from-blue-500/30 to-cyan-400/30 
+                                backdrop-blur-md rounded-2xl shadow-2xl
+                                border border-white/20 
+                                group-hover:from-blue-500/40 group-hover:to-cyan-400/40
+                                group-hover:shadow-blue-500/30
+                                transition-all duration-300">
+                        <!-- Outer Glow Effect -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-400/20 
+                                    rounded-2xl blur-sm group-hover:blur-md
+                                    transition-all duration-300">
+                        </div>
+
+                        <!-- Icon Container -->
+                        <div class="relative">
+                            <svg class="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor"
+                                stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 4a1 1 0 011-1h3M17 3h3a1 1 0 011 1v3M21 20a1 1 0 01-1 1h-3M4 21a1 1 0 01-1-1v-3M7 12h.01M11 12h.01M15 12h.01" />
+                            </svg>
+                        </div>
+
+                        <!-- Pulsing Dot Indicator -->
+                        <div class="absolute -top-1 -right-1">
+                            <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+                            <div class="absolute inset-0 w-3 h-3 bg-cyan-400 rounded-full animate-ping opacity-75">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tooltip -->
+                    <div
+                        class="absolute -bottom-8 left-1/2 transform -translate-x-1/2
+                                bg-gray-900/90 text-white text-xs py-1 px-2 rounded-lg
+                                opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                                whitespace-nowrap backdrop-blur-sm">
+                        Scan Barcode
+                    </div>
                 </a>
 
                 <!-- Icon Keranjang -->
-                <a href="{{ route('cart.index') }}" class="relative hover:scale-110 transition-transform duration-200">
-                    <svg class="w-7 h-7 text-gray-800 dark:text-white" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.6 8h13.2L17 13M7 13h10" />
-                    </svg>
-                    @if ($items->count() > 0)
-                        <span
-                            class="absolute -top-1 -right-2 bg-red-600 text-white text-xs rounded-full px-1.5 leading-none select-none">
-                            {{ $items->sum('quantity') }}
-                        </span>
-                    @endif
+                <a href="{{ route('cart.index') }}" class="relative group hover:scale-110 transition-all duration-300">
+                    <div
+                        class="relative p-3 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 
+                                backdrop-blur-md rounded-xl shadow-lg
+                                border border-white/10 
+                                group-hover:from-blue-400/30 group-hover:to-indigo-500/30
+                                transition-all duration-300">
+                        <!-- Icon Container -->
+                        <div class="relative">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.6 8h13.2L17 13M7 13h10" />
+                            </svg>
+
+                            <!-- Cart Item Count -->
+                            @if ($items->count() > 0)
+                                <span
+                                    class="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-rose-500 
+                                             text-white text-xs font-bold rounded-full w-5 h-5 
+                                             flex items-center justify-center shadow-lg
+                                             transform group-hover:scale-110 transition-transform duration-200">
+                                    {{ $items->sum('quantity') }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Tooltip -->
+                    <div
+                        class="absolute -bottom-8 left-1/2 transform -translate-x-1/2
+                                bg-gray-900/90 text-white text-xs py-1 px-2 rounded-lg
+                                opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                                whitespace-nowrap backdrop-blur-sm">
+                        Keranjang
+                    </div>
                 </a>
             </div>
         </div>
     </x-slot>
 
     <div class="py-6 text-white">
-         <div class="max-w-[97%] mx-auto px-4 sm:px-6 lg:px-6">
+        <div class="max-w-[97%] mx-auto px-4 sm:px-6 lg:px-6">
             <div class="overflow-hidden bg-blue-50 dark:bg-blue-100/30 shadow-lg sm:rounded-xl border border-blue-100">
                 <div class="px-6 pt-6 mb-1 pb-4 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 mx-auto">
 
                     {{-- Notifikasi --}}
                     @if (session('success'))
-                        <p x-data="{ show: true }" x-show="show" x-transition
-                            x-init="setTimeout(() => show = false, 3000)"
+                        <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 3000)"
                             class="pb-1 mb-4 ml-1 text-sm font-semibold text-green-700 dark:text-green-700">
                             {{ session('success') }}
                         </p>
                     @endif
 
                     @if (session('error'))
-                        <p x-data="{ show: true }" x-show="show" x-transition
-                            x-init="setTimeout(() => show = false, 3000)"
+                        <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 3000)"
                             class="pb-1 mb-4 ml-1 text-xs text-red-600 dark:text-red-600">
                             {{ session('error') }}
                         </p>
@@ -65,8 +121,8 @@
                     <form method="GET" action="{{ route('pos.index') }}" class="flex items-center gap-3">
                         <x-text-input id="product-search" name="product-search" type="text"
                             class="w-full text-sm py-2 px-3 text-gray-800 bg-white/70 backdrop-blur-lg border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            placeholder="Cari berdasarkan nama produk..."
-                            value="{{ request('product-search') }}" autofocus />
+                            placeholder="Cari berdasarkan nama produk..." value="{{ request('product-search') }}"
+                            autofocus />
 
                         <x-search-button type="submit"
                             class="text-xs px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-300 whitespace-nowrap">
@@ -84,48 +140,47 @@
                 </div>
 
                 {{-- === Daftar Produk === --}}
-<div class="p-6 text-gray-900 dark:text-gray-100">
-    <div id="product-list"
-        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
-        @forelse($products as $product)
-            <div class="relative group rounded-xl p-3 sm:p-4 flex flex-col items-center justify-between
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <div id="product-list"
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+                        @forelse($products as $product)
+                            <div class="relative group rounded-xl p-3 sm:p-4 flex flex-col items-center justify-between
                         shadow-md hover:shadow-2xl hover:scale-105 transition-all duration-300
                         cursor-pointer overflow-hidden bg-cover bg-center"
-                style="background-image: url('{{ asset('images/card1.png') }}');">
+                                style="background-image: url('{{ asset('images/card1.png') }}');">
 
-                {{-- Klik seluruh kartu untuk tambah ke keranjang --}}
-                <form action="{{ route('pos.add') }}" method="POST" class="absolute inset-0 z-10">
-                    @csrf
-                    <input type="hidden" name="product_id" value="{{ $product->id }}">
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="w-full h-full" title="Tambah ke keranjang"></button>
-                </form>
+                                {{-- Klik seluruh kartu untuk tambah ke keranjang --}}
+                                <form action="{{ route('pos.add') }}" method="POST" class="absolute inset-0 z-10">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="w-full h-full" title="Tambah ke keranjang"></button>
+                                </form>
 
-                {{-- Gambar Produk --}}
-                <div class="w-full aspect-[4/3] overflow-hidden rounded-lg mb-2 sm:mb-3">
-                    <img src="{{ asset($product->foto) }}" alt="{{ $product->nama }}"
-                        class="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-500" />
-                </div>
+                                {{-- Gambar Produk --}}
+                                <div class="w-full aspect-[4/3] overflow-hidden rounded-lg mb-2 sm:mb-3">
+                                    <img src="{{ asset($product->foto) }}" alt="{{ $product->nama }}"
+                                        class="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-500" />
+                                </div>
 
-                {{-- Nama & Harga Produk --}}
-                <div class="text-center space-y-1 w-full px-1">
-                    <h5
-                        class="text-xs sm:text-sm text-white font-bold truncate drop-shadow-md 
+                                {{-- Nama & Harga Produk --}}
+                                <div class="text-center space-y-1 w-full px-1">
+                                    <h5 class="text-xs sm:text-sm text-white font-bold truncate drop-shadow-md 
                              transition"
-                        title="{{ $product->nama }}">
-                        {{ $product->nama }}
-                    </h5>
-                    <p class="text-[11px] sm:text-xs text-white font-semibold drop-shadow-sm">
-                        Rp{{ number_format($product->harga, 0, ',', '.') }}
-                    </p>
-                </div>
-            </div>
-        @empty
-            <p class="col-span-full text-center text-gray-800 dark:text-gray-800 py-10 font-medium">
-                Produk tidak ditemukan.
-            </p>
-        @endforelse
-    </div>
+                                        title="{{ $product->nama }}">
+                                        {{ $product->nama }}
+                                    </h5>
+                                    <p class="text-[11px] sm:text-xs text-white font-semibold drop-shadow-sm">
+                                        Rp{{ number_format($product->harga, 0, ',', '.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="col-span-full text-center text-gray-800 dark:text-gray-800 py-10 font-medium">
+                                Produk tidak ditemukan.
+                            </p>
+                        @endforelse
+                    </div>
 
                     {{-- Pagination --}}
                     <div class="mt-8 flex justify-center">

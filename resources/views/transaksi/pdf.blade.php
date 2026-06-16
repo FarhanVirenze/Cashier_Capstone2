@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Laporan Transaksi Penjualan Warung Golpal</title>
     <style>
         body {
             font-family: "DejaVu Sans", sans-serif;
-            font-size: 11px;
+            font-size: 10px; /* lebih kecil */
             color: #2c3e50;
-            margin: 25px;
+            margin: 15px; /* margin lebih kecil */
             background-color: #ffffff;
         }
 
         /* HEADER */
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 8px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
             border-bottom: 1px solid #bbb;
         }
 
         .header h2 {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px; /* font header lebih kecil */
             font-weight: bold;
             color: #000;
         }
 
         .header p {
-            margin: 4px 0 0;
-            font-size: 12px;
+            margin: 3px 0 0;
+            font-size: 11px;
             color: #555;
         }
 
@@ -37,7 +38,8 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 10px;
+            table-layout: fixed; /* agar kolom muat di halaman */
         }
 
         thead {
@@ -45,20 +47,21 @@
             color: #000;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid #ccc;
-            padding: 6px 8px;
+            padding: 4px 6px; /* padding lebih kecil */
+            font-size: 9.5px; /* font lebih kecil */
+            word-wrap: break-word; /* agar teks tidak melebar */
         }
 
         th {
             text-transform: uppercase;
-            font-size: 10.5px;
             text-align: center;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }
 
         td {
-            font-size: 10.5px;
             color: #333;
         }
 
@@ -70,37 +73,42 @@
             background-color: #f0f0f0;
         }
 
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
 
         /* FOOTER & SIGNATURE */
         .bottom-section {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 30px;
+            margin-top: 20px;
             page-break-inside: avoid;
         }
 
         .footer {
-            font-size: 10px;
+            font-size: 9px;
             color: #555;
         }
 
         .signature {
             text-align: right;
-            font-size: 11px;
+            font-size: 10px;
             color: #000;
         }
 
         .signature p {
-            margin: 3px 0;
+            margin: 2px 0;
         }
 
         .signature .line {
-            margin-top: 40px;
+            margin-top: 30px;
             border-top: 1px solid #000;
-            width: 180px;
+            width: 160px;
             margin-left: auto;
         }
 
@@ -112,6 +120,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h2>Laporan Transaksi Penjualan Warung Golpal</h2>
@@ -128,23 +137,46 @@
                 <th>Pelanggan</th>
                 <th>Nomor</th>
                 <th>Metode</th>
-                <th>Sub Total</th>
-                <th>Total Bayar</th>
+                <th>Subtotal</th>
+                <th>Diskon</th>
+                <th>Total</th>
+                <th>Jumlah Bayar</th>
                 <th>Kembalian</th>
                 <th>Total Modal</th>
                 <th>Profit</th>
             </tr>
         </thead>
         <tbody>
+            @php
+                $total_sub = 0;
+                $total_diskon = 0;
+                $total_total = 0;
+                $total_bayar = 0;
+                $total_kembalian = 0;
+                $total_modal = 0;
+                $total_profit = 0;
+            @endphp
+
             @foreach ($transaksi as $i => $trx)
+                @php
+                    $total_sub += $trx->subtotal;
+                    $total_diskon += $trx->diskon;
+                    $total_total += $trx->total;
+                    $total_bayar += $trx->jumlah_bayar;
+                    $total_kembalian += $trx->kembalian;
+                    $total_modal += $trx->total_modal;
+                    $total_profit += $trx->profit;
+                @endphp
                 <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td>{{ $trx->no_invoice }}</td>
-                    <td class="text-center">{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d F Y') }}</td>
-                    <td>{{ $trx->nama_user }}</td>
-                    <td>{{ $trx->nama_pelanggan ?? '-' }}</td>
-                    <td>{{ $trx->nomor_pelanggan ?? '-' }}</td>
+                    <td class="text-center">{{ $trx->created_at->timezone('Asia/Jakarta')->translatedFormat('d F Y H:i') }}</td>
+                    <td>{{ $trx->user->name ?? '-' }}</td>
+                    <td>{{ $trx->customer->nama ?? 'Umum' }}</td>
+                    <td>{{ $trx->customer->no_telepon ?? '-' }}</td>
                     <td>{{ $trx->metode_pembayaran }}</td>
+                    <td class="text-right">Rp{{ number_format($trx->subtotal, 0, ',', '.') }}</td>
+                    <td class="text-right">Rp{{ number_format($trx->diskon, 0, ',', '.') }}</td>
                     <td class="text-right">Rp{{ number_format($trx->total, 0, ',', '.') }}</td>
                     <td class="text-right">Rp{{ number_format($trx->jumlah_bayar, 0, ',', '.') }}</td>
                     <td class="text-right">Rp{{ number_format($trx->kembalian, 0, ',', '.') }}</td>
@@ -153,11 +185,23 @@
                 </tr>
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="7" class="text-right">Total Keseluruhan:</td>
+                <td class="text-right">Rp{{ number_format($total_sub, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_diskon, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_total, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_bayar, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_kembalian, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_modal, 0, ',', '.') }}</td>
+                <td class="text-right">Rp{{ number_format($total_profit, 0, ',', '.') }}</td>
+            </tr>
+        </tfoot>
     </table>
 
     <div class="bottom-section">
         <div class="footer">
-            <p><strong>Dicetak pada:</strong> {{ \Carbon\Carbon::now()->translatedFormat('d F Y, H:i') }}</p>
+            <p><strong>Dicetak pada:</strong> {{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('d F Y, H:i') }}</p>
         </div>
         <div class="signature">
             <p>Mengetahui,</p>
@@ -166,4 +210,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -7,15 +7,22 @@
                 <!-- Logo -->
                 <div class="shrink-0">
                     <a href="{{ route('dashboard') }}" class="flex items-center space-x-3">
+                        <!-- Logo Image -->
                         <img src="{{ asset('/images/logo.png') }}" alt="Logo" class="block h-10 w-10">
-                        <span
-                            class="text-xl font-bold text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out">
-                            Warung Golpal
-                        </span>
+
+                        <!-- Text Container -->
+                        <div class="flex flex-col leading-none">
+                            <span
+                                class="text-xl font-bold text-gray-800 hover:text-blue-600 transition duration-150 ease-in-out">
+                                GoScan
+                            </span>
+                            <span class="text-xs text-gray-500 -mt-0.5">
+                                Sistem Kasir Modern
+                            </span>
+                        </div>
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
@@ -25,7 +32,14 @@
                         <x-nav-link :href="route('user.index')" :active="request()->routeIs('user.index')">
                             {{ __('Kasir') }}
                         </x-nav-link>
+                    @endcan
 
+                    <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.index')">
+                        {{ __('Member') }}
+                    </x-nav-link>
+
+
+                    @can('admin')
                         <x-nav-link :href="route('product.index')" :active="request()->routeIs('product.index')">
                             {{ __('Produk') }}
                         </x-nav-link>
@@ -35,13 +49,12 @@
                         {{ __('Point of Sale') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('transaksi.index')" :active="request()->routeIs('transaksi.index')">
-                        {{ __('Laporan Penjualan') }}
-                    </x-nav-link>
-
                     @can('admin')
-                        <x-nav-link :href="route('detailpenjualan.index')"
-                            :active="request()->routeIs('detailpenjualan.index')">
+                        <x-nav-link :href="route('transaksi.index')" :active="request()->routeIs('transaksi.index')">
+                            {{ __('Laporan Penjualan') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('detailpenjualan.index')" :active="request()->routeIs('detailpenjualan.index')">
                             {{ __('Transaksi Penjualan') }}
                         </x-nav-link>
                     @endcan
@@ -148,23 +161,29 @@
                 <x-responsive-nav-link :href="route('user.index')" :active="request()->routeIs('user.index')">
                     {{ __('Kasir') }}
                 </x-responsive-nav-link>
+            @endcan
 
+            <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.index')">
+                {{ __('Member') }}
+            </x-responsive-nav-link>
+
+            @can('admin')
                 <x-responsive-nav-link :href="route('product.index')" :active="request()->routeIs('product.index')">
                     {{ __('Produk') }}
                 </x-responsive-nav-link>
             @endcan
 
+            <!-- POS bisa diakses semua user -->
             <x-responsive-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.index')">
                 {{ __('Point of Sale') }}
             </x-responsive-nav-link>
 
-             <x-responsive-nav-link :href="route('transaksi.index')" :active="request()->routeIs('transaksi.index')">
-                {{ __('Laporan Penjualan') }}
-            </x-responsive-nav-link>
-
             @can('admin')
-                <x-responsive-nav-link :href="route('detailpenjualan.index')"
-                    :active="request()->routeIs('detailpenjualan.index')">
+                <x-responsive-nav-link :href="route('transaksi.index')" :active="request()->routeIs('transaksi.index')">
+                    {{ __('Laporan Penjualan') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('detailpenjualan.index')" :active="request()->routeIs('detailpenjualan.index')">
                     {{ __('Transaksi Penjualan') }}
                 </x-responsive-nav-link>
             @endcan
